@@ -19,7 +19,7 @@ class ServiceCategoryController extends Controller
     {
         try {
             $categories = ServiceCategory::where('user_id', auth()->user()->id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
-            return sendResponse(true, 200, 'Category Product Fetched Successfully!', $categories, 200);
+            return sendResponse(true, 200, 'Service Categories Fetched Successfully!', $categories, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
@@ -47,7 +47,7 @@ class ServiceCategoryController extends Controller
             $category->save();
             
             /*Retruing Response*/   
-            return sendResponse(true, 200, 'Product Category Created Successfully!', $category, 200);
+            return sendResponse(true, 200, 'Service Category Created Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
@@ -60,7 +60,7 @@ class ServiceCategoryController extends Controller
     {
         try {
             $table = ServiceCategory::find($id);
-            return sendResponse(true, 200, 'Category Product Fetched Successfully!', $table, 200);
+            return sendResponse(true, 200, 'Service Category Fetched Successfully!', $table, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
@@ -83,7 +83,7 @@ class ServiceCategoryController extends Controller
             $category = ServiceCategory::find($id);
             $category->update($request->all());
             
-            return sendResponse(true, 200, 'Category Product Updated Successfully!', $category, 200);
+            return sendResponse(true, 200, 'Service Category Updated Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
@@ -98,18 +98,10 @@ class ServiceCategoryController extends Controller
             $category = ServiceCategory::find($id);
             $category->delete();
             event(new CategoryDeleted($category));
-            return sendResponse(true, 200, 'Category Product Deleted Successfully!', [], 200);
+            return sendResponse(true, 200, 'Service Category Deleted Successfully!', [], 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
 
-    public function getMerchantcategories($id) {
-         try {
-            $categories = ServiceCategory::where('user_id', $id)->orderBy('id', 'desc')->get();
-            return sendResponse(true, 200, 'Category Product Fetched Successfully!', $categories, 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
-        }
-    }
 }

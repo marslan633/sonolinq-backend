@@ -92,5 +92,4 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 /**
  * Public Routes
  * **/
-Route::get('get-merchant-categories/{id}', [ServiceCategoryController::class, 'getMerchantcategories']);
 Route::get('get-configuration/{id}', [ShopConfigurationController::class, 'getConfiguration']);

@@ -61,7 +61,7 @@ class ServiceController extends Controller
     {
         try {
             $service = Service::where('id', $service->id)->with('category')->first();
-            return sendResponse(true, 200, 'service Fetched Successfully!', $service, 200);
+            return sendResponse(true, 200, 'Service Fetched Successfully!', $service, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
