@@ -27,8 +27,6 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => ['required'],
             'price' => ['required'],
-            'banner_pic' => ['required', 'file', 'mimes:png,jpg,jpeg'],
-            'discription' => ['required'],
             'status' => ['boolean']
         ];
     }
