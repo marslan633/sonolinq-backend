@@ -9,7 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\ProductCategory;
+use App\Models\ServiceCategory;
 
 class CategoryDeleted
 {
@@ -20,7 +20,7 @@ class CategoryDeleted
     /**
      * Create a new event instance.
      */
-    public function __construct(ProductCategory $category)
+    public function __construct(ServiceCategory $category)
     {
         $this->category = $category;
     }

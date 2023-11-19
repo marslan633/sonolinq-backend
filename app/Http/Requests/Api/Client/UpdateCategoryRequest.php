@@ -25,7 +25,7 @@ class UpdateCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['string', 'max:255', Rule::unique('product_categories')->ignore($this->id)],
+            'name' => ['string', 'max:255', Rule::unique('service_categories')->ignore($this->id)],
             'status' => ['boolean']
         ];
     }

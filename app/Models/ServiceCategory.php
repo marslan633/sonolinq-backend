@@ -5,15 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductCategory extends Model
+class ServiceCategory extends Model
 {
     use HasFactory;
 
         protected $fillable = [
-        'client_id',
+        'user_id',
         'name',
         'status',
-        'sorting_order',
     ];
 
     public function products()

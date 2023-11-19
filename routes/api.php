@@ -4,8 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Manager\ClientController;
 use App\Http\Controllers\Api\Manager\StaffController;
+use App\Http\Controllers\Api\Manager\ServiceCategoryController;
 use App\Http\Controllers\Api\Client\TableController;
-use App\Http\Controllers\Api\Client\ProductCategoryController;
 use App\Http\Controllers\Api\Client\ProductController;
 use App\Http\Controllers\Api\Client\VariantController;
 use App\Http\Controllers\Api\Client\DealController;
@@ -48,6 +48,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
     Route::apiResources([
         'staff' => StaffController::class,
         'client' => ClientController::class,
+        'service-category' => ServiceCategoryController::class,
     ]);
 });
 
@@ -75,8 +76,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
 
     Route::apiResources([
-        'table' => TableController::class,
-        'product-category' => ProductCategoryController::class,
+        'table' => TableController::class,       
         'product' => ProductController::class,
         'variant' => VariantController::class,
         'deals' => DealController::class,
@@ -92,6 +92,6 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 /**
  * Public Routes
  * **/
-Route::get('get-merchant-categories/{id}', [ProductCategoryController::class, 'getMerchantcategories']);
+Route::get('get-merchant-categories/{id}', [ServiceCategoryController::class, 'getMerchantcategories']);
 Route::get('get-merchant-products/{id}', [ProductController::class, 'getMerchantProducts']);
 Route::get('get-configuration/{id}', [ShopConfigurationController::class, 'getConfiguration']);
