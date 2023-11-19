@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use App\Events\CategoryDeleted;
 use App\Listeners\SendShipmentNotification;
-use App\Models\Product;
+use App\Models\Service;
 
 class CategoryDeletedListener
 {
@@ -27,6 +27,6 @@ class CategoryDeletedListener
         $category = $event->category;
 
         // Unlink products by setting their category_id to null
-        Product::where('category_id', $category->id)->update(['category_id' => null]);
+        Service::where('category_id', $category->id)->update(['category_id' => null]);
     }
 }

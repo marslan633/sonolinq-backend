@@ -18,7 +18,7 @@ class DealController extends Controller
     public function index(Request $request)
     {
         try {
-            $deals = Deal::with('products')
+            $deals = Deal::with('services')
                 ->whereIn('status', explode(',', $request->status))
                 ->orderBy('id', 'desc')
                 ->get();
@@ -55,7 +55,7 @@ class DealController extends Controller
             $deal->save();
             $deal->products()->attach(json_decode($request->products));
 
-            $dealObj = Deal::with('products')->find($deal->id);
+            $dealObj = Deal::with('services')->find($deal->id);
             
             return sendResponse(true, 200, 'Deal Created Successfully!', $dealObj, 200);
         } catch (\Exception $ex) {
@@ -69,7 +69,7 @@ class DealController extends Controller
     public function show(Deal $deal)
     {
         try {
-            $deal = Deal::with('products')->find($deal->id);
+            $deal = Deal::with('services')->find($deal->id);
             return sendResponse(true, 200, 'Category Product Fetched Successfully!', $deal, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -103,7 +103,7 @@ class DealController extends Controller
                 $deal->products()->detach();
                 $deal->products()->attach(json_decode($dealRequest['products']));
             }
-            $dealObj = Deal::with('products')->find($deal->id);
+            $dealObj = Deal::with('services')->find($deal->id);
             
             return sendResponse(true, 200, 'Deal Updated Successfully!', $dealObj, 200);
         } catch (\Exception $ex) {

@@ -19,6 +19,6 @@ class Deal extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class);
+        return $this->belongsToMany(Service::class);
     }  
 }
