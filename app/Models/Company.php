@@ -12,4 +12,9 @@ class Company extends Model
 
     protected $guarded = ['id', '_token', '_method'];
 
+
+    public function type_of_services()
+    {
+        return $this->belongsToMany(Service::class);
+    }  
 }

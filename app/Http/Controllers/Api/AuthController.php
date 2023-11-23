@@ -116,16 +116,33 @@ class AuthController extends Controller
     public function register(RegisterClientRequest $request){
         try{
             /*Creating Client*/
+            
             $client = Client::create($request->all());
+            if ($request->hasFile('non_solicitation_agreement')) {
+                $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
+                $client->update();
+            }
             /*Creating Company*/
             $company = $request->all();
-            $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-            $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
-            $company['prove_of_address'] = $request->file('prove_of_address')->store('companyImages', 'public');
+            if ($request->hasFile('reg_no_letter')) { 
+                $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
+            }
+            if ($request->hasFile('personal_director_id')) { 
+                $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
+            }
+            if ($request->hasFile('prove_of_address')) { 
+                $company['prove_of_address'] = $request->file('prove_of_address')->store('companyImages', 'public');
+            }
+            
             $client->company()->create($company);
+
+            if (isset($request->type_of_services)) { 
+                $company = $client->company;
+                $company->type_of_services()->attach(json_decode($request->type_of_services));
+            }
             /*Creating Address*/
             $client->addresses()->create((array)json_decode($request->personal_address));
-            $client->addresses()->create((array)json_decode($request->parcel_return_address));
+            // $client->addresses()->create((array)json_decode($request->parcel_return_address));
 
             /*Update reg_no*/
             $client->update(['reg_no' => generateClientId($client->id)]);

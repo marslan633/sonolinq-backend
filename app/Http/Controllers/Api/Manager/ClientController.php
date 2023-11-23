@@ -18,7 +18,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         try {
-            $staff = Client::with('company')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $staff = Client::with('company.type_of_services')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'Clients Fetched Successfully!', $staff, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -30,8 +30,9 @@ class ClientController extends Controller
      */
     public function show(String $id)
     {
+        
         try {
-            $client = Client::with('company', 'addresses')->find($id);
+            $client = Client::with('company.type_of_services', 'addresses')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -47,6 +48,10 @@ class ClientController extends Controller
             /*Creating Client*/
             $client = Client::find($id);
             $client->update($request->all());
+            if ($request->hasFile('non_solicitation_agreement')) {
+                $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
+                $client->update();
+            }
             /*Creating Company*/
             $company = $request->all();
             if ($request->hasFile('reg_no_letter')) {
@@ -64,14 +69,23 @@ class ClientController extends Controller
             if (isset($request->company_name)) {
                 $client->company()->update($company);
             }
+
+            if (isset($request->type_of_services)) { 
+                $company = $client->company;
+                $company->type_of_services()->detach();
+                $company->type_of_services()->attach($request->type_of_services);
+            }
+            
             /*Creating Address*/
             if (isset($request->personal_address)) {
                 $client->addresses()->create((array)json_decode($request->personal_address));
             }
-            if (isset($request->parcel_return_address)) {
-                $client->addresses()->create((array)json_decode($request->parcel_return_address));
-            }
-            $client = Client::with('company')->find($id);
+
+            
+            // if (isset($request->parcel_return_address)) {
+            //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
+            // }
+            $client = Client::with('company.type_of_services')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {

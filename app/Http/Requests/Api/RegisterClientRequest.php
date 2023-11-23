@@ -25,21 +25,21 @@ class RegisterClientRequest extends FormRequest
     public function rules()
     {
         return [
-            'full_name' => ['required'],
-            'email' => ['required'],
-            'phone_number' => ['sometimes', 'string'],
-            'referrer_id' => ['string'],
-            'password' => ['required', 'min:8'],
-            'terms' => ['required', 'boolean'],
-            'company_name' => ['required', 'max:255'],
-            'register_no' => ['required', 'max:255'],
-            'is_vat' => ['required', 'boolean'],
-            'reg_no_letter' => ['required', 'file', 'mimes:png,jpg,jpeg'],
-            'personal_director_id' => ['required', 'file', 'mimes:png,jpg,jpeg'],
-            'prove_of_address' => ['required', 'file', 'mimes:png,jpg,jpeg'],
-            'personal_address' => ['required', 'string'],
-            'parcel_return_address' => ['required', 'string'],
-            'url' => ['required']
+            // 'full_name' => ['required'],
+            // 'email' => ['required'],
+            // 'phone_number' => ['sometimes', 'string'],
+            // 'referrer_id' => ['string'],
+            // 'password' => ['required', 'min:8'],
+            // 'terms' => ['required', 'boolean'],
+            // 'company_name' => ['required', 'max:255'],
+            // 'register_no' => ['required', 'max:255'],
+            // 'is_vat' => ['required', 'boolean'],
+            // 'reg_no_letter' => ['required', 'file', 'mimes:png,jpg,jpeg'],
+            // 'personal_director_id' => ['required', 'file', 'mimes:png,jpg,jpeg'],
+            // 'prove_of_address' => ['required', 'file', 'mimes:png,jpg,jpeg'],
+            // 'personal_address' => ['required', 'string'],
+            // 'parcel_return_address' => ['required', 'string'],
+            // 'url' => ['required']
         ];
     }
 
