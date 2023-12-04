@@ -111,4 +111,14 @@ class ServiceController extends Controller
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+
+
+    public function getServices(Request $request) {
+        try {
+            $services = Service::with('category')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
 }
