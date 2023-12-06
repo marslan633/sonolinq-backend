@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Manager\ClientController;
 use App\Http\Controllers\Api\Manager\StaffController;
 use App\Http\Controllers\Api\Manager\ServiceCategoryController;
+use App\Http\Controllers\Api\Manager\PackageController;
 use App\Http\Controllers\Api\Client\TableController;
 use App\Http\Controllers\Api\Manager\ServiceController;
 use App\Http\Controllers\Api\Client\VariantController;
@@ -50,6 +51,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'client' => ClientController::class,
         'service-category' => ServiceCategoryController::class,
         'service' => ServiceController::class,
+        'package' => PackageController::class,
     ]);
 });
 
