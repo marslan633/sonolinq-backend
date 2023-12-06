@@ -90,6 +90,9 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     /*Defining shope configuration for Client*/
     Route::post('/update-configuration', [ShopConfigurationController::class, 'updateConfiguration']);
     Route::get('/show-configuration', [ShopConfigurationController::class, 'showConfiguration']);
+
+    Route::get('/get-client/{id}', [ClientController::class, 'getClient']);
+    Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
 });
 
 
