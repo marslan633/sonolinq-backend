@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Manager\ServiceController;
 use App\Http\Controllers\Api\Client\VariantController;
 use App\Http\Controllers\Api\Client\DealController;
 use App\Http\Controllers\Api\Client\ShopConfigurationController;
+use App\Http\Controllers\Api\Client\BankInfoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +84,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
         'variant' => VariantController::class,
         'deals' => DealController::class,
         'shop-configuration' => ShopConfigurationController::class,
+        'bank-info' => BankInfoController::class,
     ]);
     
     /*Defining shope configuration for Client*/
