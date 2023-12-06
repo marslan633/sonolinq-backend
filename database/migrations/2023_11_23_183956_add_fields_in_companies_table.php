@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::table('companies', function (Blueprint $table) {
             $table->text('years_of_experience')->nullable();
             $table->text('type_of_equipment')->nullable();
-            $table->text('equipment_other')->nullable();
+            $table->text('equipment_availability')->nullable();
+            $table->text('pacs_reading')->nullable();
             $table->text('practice_instructions')->nullable();
             $table->text('references')->nullable();
             $table->text('languages_spoken')->nullable();
