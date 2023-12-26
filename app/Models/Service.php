@@ -21,14 +21,4 @@ class Service extends Model
     {
         return $this->hasOne(ServiceCategory::class, 'id', 'category_id');
     }
-
-    public function product_variant() {
-        return $this->hasMany(ProductVariant::class);
-    }
-
-    // Define the inverse of the relationship
-    public function deals()
-    {
-        return $this->belongsToMany(Deal::class);
-    }
 }

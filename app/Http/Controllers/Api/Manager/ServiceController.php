@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Manager;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\{Service, ProductVariant};
+use App\Models\{Service};
 use App\Http\Requests\Api\Client\StoreProductRequest;
 use App\Http\Requests\Api\Client\UpdateProductRequest;
 use Illuminate\Support\Facades\Auth;

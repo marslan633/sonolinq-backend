@@ -6,11 +6,7 @@ use App\Http\Controllers\Api\Manager\ClientController;
 use App\Http\Controllers\Api\Manager\StaffController;
 use App\Http\Controllers\Api\Manager\ServiceCategoryController;
 use App\Http\Controllers\Api\Manager\PackageController;
-use App\Http\Controllers\Api\Client\TableController;
 use App\Http\Controllers\Api\Manager\ServiceController;
-use App\Http\Controllers\Api\Client\VariantController;
-use App\Http\Controllers\Api\Client\DealController;
-use App\Http\Controllers\Api\Client\ShopConfigurationController;
 use App\Http\Controllers\Api\Client\BankInfoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -83,17 +79,9 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     });
 
 
-    Route::apiResources([
-        'table' => TableController::class,       
-        'variant' => VariantController::class,
-        'deals' => DealController::class,
-        'shop-configuration' => ShopConfigurationController::class,
+    Route::apiResources([     
         'bank-info' => BankInfoController::class,
     ]);
-    
-    /*Defining shope configuration for Client*/
-    Route::post('/update-configuration', [ShopConfigurationController::class, 'updateConfiguration']);
-    Route::get('/show-configuration', [ShopConfigurationController::class, 'showConfiguration']);
 
     Route::get('/get-client/{id}', [ClientController::class, 'getClient']);
     Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
@@ -109,7 +97,5 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 /**
  * Public Routes
  * **/
-Route::get('get-configuration/{id}', [ShopConfigurationController::class, 'getConfiguration']);
-// Get Services for Clients
 Route::get('/get-services', [ServiceController::class, 'getServices']); 
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
