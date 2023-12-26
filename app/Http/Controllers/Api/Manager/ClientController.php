@@ -9,6 +9,8 @@ use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Stripe\Stripe;
+use Stripe\Charge;
 
 class ClientController extends Controller
 {
@@ -280,6 +282,21 @@ class ClientController extends Controller
 
     public function appointment(Request $request) {
         try {
+            if($request->input('token')) {
+                Stripe::setApiKey(env('STRIPE_SECRET'));
+                try {
+                    $charge = Charge::create([
+                        'amount' => $request->input('amount'), // Amount in cents
+                        'currency' => 'usd',
+                        'source' => $request->input('token'), // Token received from client
+                        'description' => 'SonoLinq Service Payment',
+                    ]);
+                } catch (\Exception $e) {
+                    // Handle payment error here
+                    return response()->json(['error' => $e->getMessage()], 500);
+                }
+            }
+            
             $booking = $request->all();
             $client_id = Auth::guard('client-api')->user()->id;
             
