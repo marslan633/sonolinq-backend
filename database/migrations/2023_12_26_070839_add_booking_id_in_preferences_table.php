@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clients', function (Blueprint $table) {
-            // $table->decimal('total_virtual_balance', 10,2)->default(0);
-            // $table->string('gender')->nullable();
-            // $table->string('level')->nullable();
+        Schema::table('preferences', function (Blueprint $table) {
+            $table->unsignedBigInteger('booking_id')->nullable();
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
         });
     }
 
@@ -23,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('clients', function (Blueprint $table) {
+        Schema::table('preferences', function (Blueprint $table) {
             //
         });
     }

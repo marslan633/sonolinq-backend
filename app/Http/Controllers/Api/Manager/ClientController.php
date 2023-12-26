@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\Client;
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -215,6 +215,158 @@ class ClientController extends Controller
             $client = Client::with('company.type_of_services')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function checkEligibility(Request $request) {
+        try {
+            $gender = $request->input('sonographer_gender');
+            $level = $request->input('sonographer_level');
+            $experience = $request->input('sonographer_experience');
+            $register_no = $request->input('sonographer_registery');
+            $language = $request->input('sonographer_language');
+            
+            // $query = Company::query();
+            // if ($gender) {
+            //     $query->where('gender', $gender);
+            // }
+
+            // if ($level) {
+            //     $query->where('level', $level);
+            // }
+
+            // if ($experience) {
+            //     $query->where('years_of_experience', $experience);
+            // }
+
+            // if($register_no) {
+            //     $query->whereNotNull('register_no');
+            // }
+
+            // if ($language) {
+            //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+            // }
+
+            // $records = $query->count();
+
+            $records = Company::with('client')
+                ->whereHas('client', function ($query) {
+                    $query->where('role', 'Sonographer');
+                })
+                ->when($gender, function ($query, $gender) {
+                    $query->where('gender', $gender);
+                })
+                ->when($level, function ($query, $level) {
+                    $query->where('level', $level);
+                })
+                ->when($experience, function ($query, $experience) {
+                    $query->where('years_of_experience', $experience);
+                })
+                ->when($register_no, function ($query) {
+                    $query->whereNotNull('register_no');
+                })
+                ->when($language, function ($query, $language) {
+                    $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                })
+                ->count();
+
+            return sendResponse(true, 200, 'Sonographer Counts!', $records, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function appointment(Request $request) {
+        try {
+            $booking = $request->all();
+            $client_id = Auth::guard('client-api')->user()->id;
+            
+            $booking['doctor_id'] = $client_id;
+            $booking = Booking::create($booking);
+
+            $preference = $request->all();
+            $preference['booking_id']= $booking->id; 
+            $preference = Preference::create($preference);
+
+            // Run eligibility check for sonographer
+            $gender = $request->input('sonographer_gender');
+            $level = $request->input('sonographer_level');
+            $experience = $request->input('sonographer_experience');
+            $register_no = $request->input('sonographer_registery');
+            $language = $request->input('sonographer_language');
+            
+            $records = Company::with('client')
+                ->whereHas('client', function ($query) {
+                    $query->where('role', 'Sonographer');
+                })
+                ->when($gender, function ($query, $gender) {
+                    $query->where('gender', $gender);
+                })
+                ->when($level, function ($query, $level) {
+                    $query->where('level', $level);
+                })
+                ->when($experience, function ($query, $experience) {
+                    $query->where('years_of_experience', $experience);
+                })
+                ->when($register_no, function ($query) {
+                    $query->whereNotNull('register_no');
+                })
+                ->when($language, function ($query, $language) {
+                    $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                })
+                ->pluck('id');
+
+            $sonographerIds = $records;
+
+            foreach($sonographerIds as $sonographerId) {
+                EligibleSonographer::updateOrCreate(
+                    ['sonographer_id' => $sonographerId],
+                    ['booking_id' => $booking->id]
+                );
+            }
+            
+            return sendResponse(true, 200, 'Appointment Created Successfully!', $preference, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function getEligibleSonographers(Request $request) {
+        try {
+            $client_id = Auth::guard('client-api')->user()->id;
+            $bookingList = EligibleSonographer::with('booking')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+        
+            return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookingList, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function acceptBookingRequest($id) {
+        try {
+            $sonograhper = EligibleSonographer::find($id);
+            $sonograhper->status = 'Active';
+            $sonograhper->save();
+            
+            $client_id = Auth::guard('client-api')->user()->id;
+            EligibleSonographer::where('sonographer_id', '!=', $client_id)->delete();
+
+            $booking = Booking::find($sonograhper->booking_id);
+            $booking->sonographer_id = $sonograhper->sonographer_id;
+            $booking->save();
+            
+            return sendResponse(true, 200, 'Sonographer Accept Request Successfully!', $sonograhper, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function bookingList() {
+        try {
+            $bookings = Booking::with('preferences')->with('doctor')->with('sonographer')->get();
+            return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }

@@ -54,6 +54,10 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'service' => ServiceController::class,
         'package' => PackageController::class,
     ]);
+
+
+    // get All booking for admin
+    Route::get('/get-booking-list', [ClientController::class, 'bookingList']); 
 });
 
 
@@ -93,7 +97,13 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
     Route::get('/get-client/{id}', [ClientController::class, 'getClient']);
     Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
-});
+
+    // Sonographer eligibility check API
+    Route::get('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
+    Route::post('/appointment', [ClientController::class, 'appointment']);
+    Route::get('/get-eligible-sonographer', [ClientController::class, 'getEligibleSonographers']);
+    Route::get('/accept-booking-request/{id}', [ClientController::class, 'acceptBookingRequest']);
+}); 
 
 
 /**
@@ -102,3 +112,4 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 Route::get('get-configuration/{id}', [ShopConfigurationController::class, 'getConfiguration']);
 // Get Services for Clients
 Route::get('/get-services', [ServiceController::class, 'getServices']); 
+Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 

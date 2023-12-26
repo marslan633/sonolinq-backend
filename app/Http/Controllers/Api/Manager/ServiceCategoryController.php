@@ -104,4 +104,14 @@ class ServiceCategoryController extends Controller
         }
     }
 
+
+    public function getServiceCategories(Request $request) {
+        try {
+            $categories = ServiceCategory::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            return sendResponse(true, 200, 'Service Categories Fetched Successfully!', $categories, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
 }

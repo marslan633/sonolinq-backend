@@ -17,4 +17,9 @@ class Company extends Model
     {
         return $this->belongsToMany(Service::class);
     }  
+
+
+    public function client() {
+        return $this->hasOne(Client::class, 'id', 'client_id');
+    }
 }
