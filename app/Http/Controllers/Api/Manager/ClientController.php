@@ -353,7 +353,7 @@ class ClientController extends Controller
     public function getEligibleSonographers(Request $request) {
         try {
             $client_id = Auth::guard('client-api')->user()->id;
-            $bookingList = EligibleSonographer::with('booking')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $bookingList = EligibleSonographer::with('booking.service', 'booking.service_category', 'booking.doctor', 'booking.sonographer')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
         
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookingList, 200);
         } catch (\Exception $ex) {
@@ -382,7 +382,7 @@ class ClientController extends Controller
 
     public function bookingList() {
         try {
-            $bookings = Booking::with('preferences')->with('doctor')->with('sonographer')->get();
+            $bookings = Booking::with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

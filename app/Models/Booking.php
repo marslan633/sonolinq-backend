@@ -31,4 +31,12 @@ class Booking extends Model
     public function sonographer() {
         return $this->hasOne(Client::class, 'id', 'sonographer_id');
     }
+
+    public function service_category() {
+        return $this->hasOne(ServiceCategory::class, 'id', 'service_category_id');
+    }
+
+    public function service() {
+        return $this->hasOne(Service::class, 'id', 'service_id');
+    }
 }
