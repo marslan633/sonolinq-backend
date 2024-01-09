@@ -42,6 +42,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
     /*Change Password Api*/
     Route::prefix('auth')->controller(AuthController::class)->group(function () {
         Route::post('change-password', 'change_password');
+        Route::get('logout', 'logout');
     });
     Route::apiResources([
         'staff' => StaffController::class,
@@ -64,6 +65,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     /*Change Password Api*/
     Route::prefix('auth')->controller(AuthController::class)->group(function () {
         Route::post('change-password', 'change_password');
+        Route::get('logout', 'logout');
     });
 
     /*Defining Client Routes*/
@@ -87,10 +89,14 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
 
     // Sonographer eligibility check API
-    Route::get('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
+    Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
     Route::post('/appointment', [ClientController::class, 'appointment']);
     Route::get('/get-eligible-sonographer', [ClientController::class, 'getEligibleSonographers']);
     Route::get('/accept-booking-request/{id}', [ClientController::class, 'acceptBookingRequest']);
+    Route::get('/reject-booking-request/{id}', [ClientController::class, 'rejectBookingRequest']);
+
+    Route::get('/get-doctor-bookings', [ClientController::class, 'getDoctorBookings']);
+    Route::get('/show-booking/{id}', [ClientController::class, 'showBooking']);
 }); 
 
 

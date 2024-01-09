@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Stripe\Stripe;
 use Stripe\Charge;
+use DB;
 
 class ClientController extends Controller
 {
@@ -230,47 +231,36 @@ class ClientController extends Controller
             $register_no = $request->input('sonographer_registery');
             $language = $request->input('sonographer_language');
             
-            // $query = Company::query();
-            // if ($gender) {
-            //     $query->where('gender', $gender);
-            // }
-
-            // if ($level) {
-            //     $query->where('level', $level);
-            // }
-
-            // if ($experience) {
-            //     $query->where('years_of_experience', $experience);
-            // }
-
-            // if($register_no) {
-            //     $query->whereNotNull('register_no');
-            // }
-
-            // if ($language) {
-            //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
-            // }
-
-            // $records = $query->count();
-
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
                     $query->where('role', 'Sonographer');
                 })
-                ->when($gender, function ($query, $gender) {
-                    $query->where('gender', $gender);
-                })
                 ->when($level, function ($query, $level) {
                     $query->where('level', $level);
                 })
+                // ->when($experience, function ($query, $experience) {
+                //     $query->where(function ($subQuery) use ($experience) {
+                //         $subQuery->where('years_of_experience', $experience)
+                //             ->orWhere(function ($q) use ($experience) {
+                //                 $q->where('years_of_experience', '>', $experience);
+                //             });
+                //     });
+                // })
                 ->when($experience, function ($query, $experience) {
-                    $query->where('years_of_experience', $experience);
+                    $query->where('years_of_experience', '>=', $experience);
                 })
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
                 ->when($language, function ($query, $language) {
                     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                })
+                ->when($gender, function ($query, $gender) {
+                    $query->whereHas('client', function ($subQuery) use ($gender) {
+                        $subQuery->where('gender', $gender)
+                            ->orWhereNull('gender')
+                            ->orWhere('gender', '');
+                    });
                 })
                 ->count();
 
@@ -314,24 +304,48 @@ class ClientController extends Controller
             $register_no = $request->input('sonographer_registery');
             $language = $request->input('sonographer_language');
             
+            // $records = Company::with('client')
+            //     ->whereHas('client', function ($query) {
+            //         $query->where('role', 'Sonographer');
+            //     })
+            //     ->when($gender, function ($query, $gender) {
+            //         $query->where('gender', $gender);
+            //     })
+            //     ->when($level, function ($query, $level) {
+            //         $query->where('level', $level);
+            //     })
+            //     ->when($experience, function ($query, $experience) {
+            //         $query->where('years_of_experience', $experience);
+            //     })
+            //     ->when($register_no, function ($query) {
+            //         $query->whereNotNull('register_no');
+            //     })
+            //     ->when($language, function ($query, $language) {
+            //         $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+            //     })
+            //     ->pluck('id');
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
                     $query->where('role', 'Sonographer');
-                })
-                ->when($gender, function ($query, $gender) {
-                    $query->where('gender', $gender);
                 })
                 ->when($level, function ($query, $level) {
                     $query->where('level', $level);
                 })
                 ->when($experience, function ($query, $experience) {
-                    $query->where('years_of_experience', $experience);
+                    $query->where('years_of_experience', '>=', $experience);
                 })
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
                 ->when($language, function ($query, $language) {
                     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                })
+                ->when($gender, function ($query, $gender) {
+                    $query->whereHas('client', function ($subQuery) use ($gender) {
+                        $subQuery->where('gender', $gender)
+                            ->orWhereNull('gender')
+                            ->orWhere('gender', '');
+                    });
                 })
                 ->pluck('id');
 
@@ -372,6 +386,7 @@ class ClientController extends Controller
 
             $booking = Booking::find($sonograhper->booking_id);
             $booking->sonographer_id = $sonograhper->sonographer_id;
+            $booking->status = 'Active';
             $booking->save();
             
             return sendResponse(true, 200, 'Sonographer Accept Request Successfully!', $sonograhper, 200);
@@ -380,9 +395,46 @@ class ClientController extends Controller
         }
     }
 
+    public function rejectBookingRequest($bookingID) {
+        try {
+            $checkBooking = EligibleSonographer::where('booking_id', $bookingID)->count();
+            if($checkBooking > 0) {
+                if($checkBooking === 1) {
+                    $booking = Booking::find($bookingID);
+                    $booking->status = 'Rejected';
+                    $booking->save();
+                }
+                $client_id = Auth::guard('client-api')->user()->id;
+                EligibleSonographer::where('sonographer_id', $client_id)->delete();
+
+                return sendResponse(true, 200, 'Sonographer Reject Request Successfully!', 200);
+            }
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
     public function bookingList() {
         try {
             $bookings = Booking::with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function getDoctorBookings(Request $request) {
+        try {
+            $bookings = Booking::where('doctor_id', Auth::user()->id)->whereIn('status', explode(',', $request->status))->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function showBooking($id) {
+        try {
+            $bookings = Booking::where('id', $id)->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

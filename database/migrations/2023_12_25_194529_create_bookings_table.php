@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('type')->nullable();
             $table->string('date')->nullable();
             $table->string('time')->nullable();
+            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected'])->default('Pending');
             
             $table->timestamps();
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('clients', function (Blueprint $table) {
             // $table->decimal('total_virtual_balance', 10,2)->default(0);
-            // $table->string('gender')->nullable();
+            $table->string('gender')->nullable();
             // $table->string('level')->nullable();
         });
     }

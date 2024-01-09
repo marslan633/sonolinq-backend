@@ -184,4 +184,16 @@ class AuthController extends Controller
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+
+
+    /**
+     * Logout Api
+     * **/
+    public function logout(Request $request)
+    {
+        $token = $request->user()->token();
+        $token->revoke();
+
+        return response()->json(['message' => 'Logged out successfully']);
+    }
 }

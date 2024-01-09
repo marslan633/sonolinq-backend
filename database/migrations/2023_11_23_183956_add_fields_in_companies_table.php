@@ -21,8 +21,8 @@ return new class extends Migration
             $table->text('languages_spoken')->nullable();
             $table->text('any_limitation')->nullable();
             $table->text('certifications')->nullable();
-            $table->string('gender')->nullable();
-            $table->string('level')->nullable();
+            // $table->string('gender')->nullable();
+            $table->enum('level', ['Verified', 'UnVerified', 'Verified+'])->default('Verified');
         });
     }
 
