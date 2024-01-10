@@ -96,7 +96,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('/reject-booking-request/{id}', [ClientController::class, 'rejectBookingRequest']);
 
     Route::get('/get-doctor-bookings', [ClientController::class, 'getDoctorBookings']);
-    Route::get('/show-booking/{id}', [ClientController::class, 'showBooking']);
+    
 }); 
 
 
@@ -106,3 +106,4 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 Route::get('/get-services', [ServiceController::class, 'getServices']); 
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
 Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
+Route::get('/show-booking/{id}', [ClientController::class, 'showBooking']);
