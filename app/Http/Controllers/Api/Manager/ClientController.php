@@ -244,9 +244,6 @@ class ClientController extends Controller
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
-                // ->when($language, function ($query, $language) {
-                //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
-                // })
                 ->when($language, function ($query) use ($language) {
                     $query->where(function ($subQuery) use ($language) {
                         foreach ($language as $lang) {
@@ -336,9 +333,6 @@ class ClientController extends Controller
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
-                // ->when($language, function ($query, $language) {
-                //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
-                // })
                 ->when($language, function ($query) use ($language) {
                     $query->where(function ($subQuery) use ($language) {
                         foreach ($language as $lang) {
