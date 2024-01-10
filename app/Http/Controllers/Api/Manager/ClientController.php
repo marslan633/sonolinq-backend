@@ -238,22 +238,21 @@ class ClientController extends Controller
                 ->when($level, function ($query, $level) {
                     $query->where('level', $level);
                 })
-                // ->when($experience, function ($query, $experience) {
-                //     $query->where(function ($subQuery) use ($experience) {
-                //         $subQuery->where('years_of_experience', $experience)
-                //             ->orWhere(function ($q) use ($experience) {
-                //                 $q->where('years_of_experience', '>', $experience);
-                //             });
-                //     });
-                // })
                 ->when($experience, function ($query, $experience) {
                     $query->where('years_of_experience', '>=', $experience);
                 })
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
-                ->when($language, function ($query, $language) {
-                    $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                // ->when($language, function ($query, $language) {
+                //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                // })
+                ->when($language, function ($query) use ($language) {
+                    $query->where(function ($subQuery) use ($language) {
+                        foreach ($language as $lang) {
+                            $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+                        }
+                    });
                 })
                 ->when($gender, function ($query, $gender) {
                     $query->whereHas('client', function ($subQuery) use ($gender) {
@@ -337,8 +336,15 @@ class ClientController extends Controller
                 ->when($register_no, function ($query) {
                     $query->whereNotNull('register_no');
                 })
-                ->when($language, function ($query, $language) {
-                    $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                // ->when($language, function ($query, $language) {
+                //     $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
+                // })
+                ->when($language, function ($query) use ($language) {
+                    $query->where(function ($subQuery) use ($language) {
+                        foreach ($language as $lang) {
+                            $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+                        }
+                    });
                 })
                 ->when($gender, function ($query, $gender) {
                     $query->whereHas('client', function ($subQuery) use ($gender) {
