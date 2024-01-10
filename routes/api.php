@@ -89,7 +89,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
 
     // Sonographer eligibility check API
-    Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
+    
     Route::post('/appointment', [ClientController::class, 'appointment']);
     Route::get('/get-eligible-sonographer', [ClientController::class, 'getEligibleSonographers']);
     Route::get('/accept-booking-request/{id}', [ClientController::class, 'acceptBookingRequest']);
@@ -105,3 +105,4 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
  * **/
 Route::get('/get-services', [ServiceController::class, 'getServices']); 
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
+Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
