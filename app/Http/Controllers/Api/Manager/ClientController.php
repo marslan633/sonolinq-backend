@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 use Stripe\Stripe;
 use Stripe\Charge;
 use DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BookingRequestMail;
 
 class ClientController extends Controller
 {
@@ -269,7 +271,7 @@ class ClientController extends Controller
     public function appointment(Request $request) {
         try {
             if($request->input('token')) {
-                Stripe::setApiKey(env('STRIPE_SECRET'));
+                Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
                 try {
                     $charge = Charge::create([
                         'amount' => $request->input('amount'), // Amount in cents
@@ -291,6 +293,11 @@ class ClientController extends Controller
 
             $preference = $request->all();
             $preference['booking_id']= $booking->id; 
+            
+            $arrayLanguage = $request->input('sonographer_language');
+            $strLang = implode(',', $arrayLanguage);
+            
+            $preference['sonographer_language'] = $strLang;
             $preference = Preference::create($preference);
 
             // Run eligibility check for sonographer
@@ -347,15 +354,20 @@ class ClientController extends Controller
                             ->orWhere('gender', '');
                     });
                 })
-                ->pluck('id');
+                ->get();
 
-            $sonographerIds = $records;
+            $sonographers = $records;
 
-            foreach($sonographerIds as $sonographerId) {
-                EligibleSonographer::updateOrCreate(
-                    ['sonographer_id' => $sonographerId],
-                    ['booking_id' => $booking->id]
-                );
+            foreach($sonographers as $sonographer) {
+                $eligible = new EligibleSonographer();
+                $eligible->sonographer_id = $sonographer->client_id;
+                $eligible->booking_id = $booking->id;
+                $eligible->save();
+                // EligibleSonographer::create(
+                //     ['sonographer_id' => $sonographer->client_id],
+                //     ['booking_id' => $bookingID]
+                // );
+                Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
             }
             
             return sendResponse(true, 200, 'Appointment Created Successfully!', $preference, 200);
@@ -380,14 +392,14 @@ class ClientController extends Controller
             $sonograhper = EligibleSonographer::find($id);
             $sonograhper->status = 'Active';
             $sonograhper->save();
-            
-            $client_id = Auth::guard('client-api')->user()->id;
-            EligibleSonographer::where('sonographer_id', '!=', $client_id)->delete();
 
             $booking = Booking::find($sonograhper->booking_id);
             $booking->sonographer_id = $sonograhper->sonographer_id;
             $booking->status = 'Active';
             $booking->save();
+
+            $client_id = Auth::guard('client-api')->user()->id;
+            EligibleSonographer::where('sonographer_id', '!=', $client_id)->where('booking_id', $booking->id)->delete();
             
             return sendResponse(true, 200, 'Sonographer Accept Request Successfully!', $sonograhper, 200);
         } catch (\Exception $ex) {
@@ -405,9 +417,9 @@ class ClientController extends Controller
                     $booking->save();
                 }
                 $client_id = Auth::guard('client-api')->user()->id;
-                EligibleSonographer::where('sonographer_id', $client_id)->delete();
+                EligibleSonographer::where('sonographer_id', $client_id)->where('booking_id', $bookingID)->delete();
 
-                return sendResponse(true, 200, 'Sonographer Reject Request Successfully!', 200);
+                return sendResponse(true, 200, 'Sonographer Reject Request Successfully!', '', 200);
             }
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
