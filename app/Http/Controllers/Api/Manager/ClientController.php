@@ -421,7 +421,7 @@ class ClientController extends Controller
                 $client_id = Auth::guard('client-api')->user()->id;
                 EligibleSonographer::where('sonographer_id', $client_id)->where('booking_id', $bookingID)->delete();
 
-                return sendResponse(true, 200, 'Sonographer Reject Request Successfully!', '', 200);
+                return sendResponse(true, 200, 'Sonographer Reject Request Successfully!', [], 200);
             }
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
