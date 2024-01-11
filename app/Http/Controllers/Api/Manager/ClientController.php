@@ -294,10 +294,12 @@ class ClientController extends Controller
             $preference = $request->all();
             $preference['booking_id']= $booking->id; 
             
-            $arrayLanguage = $request->input('sonographer_language');
-            $strLang = implode(',', $arrayLanguage);
-            
-            $preference['sonographer_language'] = $strLang;
+            if($request->input('sonographer_language')) {
+                $arrayLanguage = $request->input('sonographer_language');
+                $strLang = implode(',', $arrayLanguage);
+                
+                $preference['sonographer_language'] = $strLang;                                 
+            }
             $preference = Preference::create($preference);
 
             // Run eligibility check for sonographer
