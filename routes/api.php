@@ -97,6 +97,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
     Route::get('/get-doctor-bookings', [ClientController::class, 'getDoctorBookings']);
     
+    Route::get('/validate-token', [ClientController::class, 'validateToken']);
 }); 
 
 

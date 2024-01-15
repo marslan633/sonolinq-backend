@@ -454,4 +454,16 @@ class ClientController extends Controller
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+    
+    public function validateToken() {
+        try {
+            if (Auth::guard('client-api')->check()) {
+                return sendResponse(true, 200, 'Token is valid', [], 200);
+            } else {
+                return sendResponse(false, 401, 'Token is not valid, Please login again!', [], 200);
+            }
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
 }
