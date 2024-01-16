@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -268,7 +268,7 @@ class ClientController extends Controller
         }
     }
 
-    public function appointment(Request $request) {
+    public function appointment(Request $request) {    
         try {
             if($request->input('token')) {
                 Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
@@ -290,6 +290,18 @@ class ClientController extends Controller
             
             $booking['doctor_id'] = $client_id;
             $booking = Booking::create($booking);
+
+            foreach ($request->reservations as $reservationData) {
+                $reservation = Reservation::create([
+                    'type' => $reservationData['type'],
+                    'date' => $reservationData['date'],
+                    'time' => $reservationData['time'],
+                    'booking_id' => $booking->id,
+                ]);
+
+                $reservation->serviceCategories()->attach($reservationData['service_category_id']);
+                $reservation->services()->attach($reservationData['service_id']);
+            }
 
             $preference = $request->all();
             $preference['booking_id']= $booking->id; 
@@ -381,8 +393,21 @@ class ClientController extends Controller
     public function getEligibleSonographers(Request $request) {
         try {
             $client_id = Auth::guard('client-api')->user()->id;
-            $bookingList = EligibleSonographer::with('booking.service', 'booking.service_category', 'booking.doctor', 'booking.sonographer')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            // $bookingList = EligibleSonographer::with('booking.service', 'booking.service_category', 'booking.doctor', 'booking.sonographer')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
         
+            $bookingList = EligibleSonographer::with([
+                'booking.reservations' => function ($query) {
+                    $query->with(['serviceCategories', 'services.category']);
+                },
+                'booking.doctor',
+                'booking.sonographer',
+            ])
+            ->where('sonographer_id', $client_id)
+            ->whereIn('status', explode(',', $request->status))
+            ->orderBy('id', 'desc')
+            ->get();
+
+
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookingList, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -430,7 +455,16 @@ class ClientController extends Controller
 
     public function bookingList() {
         try {
-            $bookings = Booking::with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            // $bookings = Booking::with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            $bookings = Booking::with([
+                'reservations' => function ($query) {
+                    $query->with(['serviceCategories', 'services']);
+                },
+                'doctor',
+                'sonographer',
+                'preferences',
+            ])
+            ->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -439,7 +473,18 @@ class ClientController extends Controller
 
     public function getDoctorBookings(Request $request) {
         try {
-            $bookings = Booking::where('doctor_id', Auth::user()->id)->whereIn('status', explode(',', $request->status))->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            // $bookings = Booking::where('doctor_id', Auth::user()->id)->whereIn('status', explode(',', $request->status))->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            $bookings = Booking::where('doctor_id', Auth::user()->id)
+                ->whereIn('status', explode(',', $request->status))
+                ->with([
+                    'reservations' => function ($query) {
+                        $query->with(['serviceCategories', 'services.category']);
+                    },
+                    'sonographer',
+                    'preferences',
+                    'doctor'
+                ])
+                ->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -448,7 +493,18 @@ class ClientController extends Controller
 
     public function showBooking($id) {
         try {
-            $bookings = Booking::where('id', $id)->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+            // $bookings = Booking::where('id', $id)->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
+
+            $bookings = Booking::where('id', $id)
+                ->with([
+                    'reservations' => function ($query) {
+                        $query->with(['serviceCategories' ,'services.category']);
+                    },
+                    'sonographer',
+                    'preferences',
+                    'doctor'
+                ])
+                ->first();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

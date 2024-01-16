@@ -19,17 +19,17 @@ return new class extends Migration
             $table->foreign('doctor_id')->references('id')->on('clients')->onDelete('cascade');
             $table->foreign('sonographer_id')->references('id')->on('clients')->onDelete('cascade');
             
-            $table->unsignedBigInteger('service_category_id')->nullable();
-            $table->foreign('service_category_id')->references('id')->on('service_categories')->onDelete('cascade');
+            // $table->unsignedBigInteger('service_category_id')->nullable();
+            // $table->foreign('service_category_id')->references('id')->on('service_categories')->onDelete('cascade');
 
-            $table->unsignedBigInteger('service_id')->nullable();
-            $table->foreign('service_id')->references('id')->on('services')->onDelete('cascade');
+            // $table->unsignedBigInteger('service_id')->nullable();
+            // $table->foreign('service_id')->references('id')->on('services')->onDelete('cascade');
             
 
-            $table->string('type')->nullable();
-            $table->string('date')->nullable();
-            $table->string('time')->nullable();
-            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected'])->default('Pending');
+            // $table->string('type')->nullable();
+            // $table->string('date')->nullable();
+            // $table->string('time')->nullable();
+            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Delivered', 'Completed', 'Rejected'])->default('Pending');
             
             $table->timestamps();
         });

@@ -20,4 +20,15 @@ class ServiceCategory extends Model
         return $this->hasMany(Service::class);
     }
 
+    public function reservations()
+    {
+        return $this->belongsToMany(Reservation::class);
+    }
+
+
+    // for checking
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
 }

@@ -12,11 +12,11 @@ class Booking extends Model
     protected $fillable = [
         'doctor_id',
         'sonographer_id',
-        'service_category_id',
-        'service_id',
-        'type',
-        'date',
-        'time',
+        // 'service_category_id',
+        // 'service_id',
+        // 'type',
+        // 'date',
+        // 'time',
     ];
 
     public function preferences()
@@ -32,11 +32,16 @@ class Booking extends Model
         return $this->hasOne(Client::class, 'id', 'sonographer_id');
     }
 
-    public function service_category() {
-        return $this->hasOne(ServiceCategory::class, 'id', 'service_category_id');
-    }
+    // public function service_category() {
+    //     return $this->hasOne(ServiceCategory::class, 'id', 'service_category_id');
+    // }
 
-    public function service() {
-        return $this->hasOne(Service::class, 'id', 'service_id');
+    // public function service() {
+    //     return $this->hasOne(Service::class, 'id', 'service_id');
+    // }
+
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class);
     }
 }
