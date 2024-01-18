@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('preferences', function (Blueprint $table) {
-            $table->unsignedBigInteger('booking_id')->nullable();
-            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
+        Schema::table('reservations', function (Blueprint $table) {
+            $table->string('amount')->nullable();
         });
     }
 
@@ -22,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('preferences', function (Blueprint $table) {
+        Schema::table('reservations', function (Blueprint $table) {
             //
         });
     }

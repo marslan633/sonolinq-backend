@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +14,10 @@ use Stripe\Charge;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BookingRequestMail;
+use Stripe\Transfer;
+use Stripe\Payout;
+use Stripe\Customer;
+use Stripe\Token;
 
 class ClientController extends Controller
 {
@@ -268,13 +272,13 @@ class ClientController extends Controller
         }
     }
 
-    public function appointment(Request $request) {    
+    public function appointment(Request $request) { 
         try {
             if($request->input('token')) {
                 Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
                 try {
                     $charge = Charge::create([
-                        'amount' => $request->input('amount'), // Amount in cents
+                        'amount' => $request->input('amount') * 100, // Convert amount to cents
                         'currency' => 'usd',
                         'source' => $request->input('token'), // Token received from client
                         'description' => 'SonoLinq Service Payment',
@@ -285,26 +289,8 @@ class ClientController extends Controller
                 }
             }
             
-            $booking = $request->all();
-            $client_id = Auth::guard('client-api')->user()->id;
-            
-            $booking['doctor_id'] = $client_id;
-            $booking = Booking::create($booking);
-
-            foreach ($request->reservations as $reservationData) {
-                $reservation = Reservation::create([
-                    'type' => $reservationData['type'],
-                    'date' => $reservationData['date'],
-                    'time' => $reservationData['time'],
-                    'booking_id' => $booking->id,
-                ]);
-
-                $reservation->serviceCategories()->attach($reservationData['service_category_id']);
-                $reservation->services()->attach($reservationData['service_id']);
-            }
-
+            // Creating preference first
             $preference = $request->all();
-            $preference['booking_id']= $booking->id; 
             
             if($request->input('sonographer_language')) {
                 $arrayLanguage = $request->input('sonographer_language');
@@ -313,7 +299,37 @@ class ClientController extends Controller
                 $preference['sonographer_language'] = $strLang;                                 
             }
             $preference = Preference::create($preference);
+            
 
+            foreach ($request->reservations as $reservationData) {
+                
+                // Booking will create on the base of reservations
+                $booking = $request->all();
+                $client_id = Auth::guard('client-api')->user()->id;
+                
+                $booking['doctor_id'] = $client_id;
+                if($request->amount) {
+                    $booking['charge_amount'] = $charge->amount;
+                }
+                
+                $booking['preference_id']= $preference->id; 
+                
+                $booking = Booking::create($booking);
+
+                // Creating reservation
+                $reservation = Reservation::create([
+                    'type' => $reservationData['type'],
+                    'date' => $reservationData['date'],
+                    'time' => $reservationData['time'],
+                    'amount' => $reservationData['amount'],
+                    'booking_id' => $booking->id,
+                ]);
+
+                $reservation->serviceCategories()->attach($reservationData['service_category_id']);
+                $reservation->services()->attach($reservationData['service_id']);
+            }
+
+            
             // Run eligibility check for sonographer
             $gender = $request->input('sonographer_gender');
             $level = $request->input('sonographer_level');
@@ -321,26 +337,6 @@ class ClientController extends Controller
             $register_no = $request->input('sonographer_registery');
             $language = $request->input('sonographer_language');
             
-            // $records = Company::with('client')
-            //     ->whereHas('client', function ($query) {
-            //         $query->where('role', 'Sonographer');
-            //     })
-            //     ->when($gender, function ($query, $gender) {
-            //         $query->where('gender', $gender);
-            //     })
-            //     ->when($level, function ($query, $level) {
-            //         $query->where('level', $level);
-            //     })
-            //     ->when($experience, function ($query, $experience) {
-            //         $query->where('years_of_experience', $experience);
-            //     })
-            //     ->when($register_no, function ($query) {
-            //         $query->whereNotNull('register_no');
-            //     })
-            //     ->when($language, function ($query, $language) {
-            //         $query->where('languages_spoken', 'LIKE', '%' . $language . '%');
-            //     })
-            //     ->pluck('id');
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
                     $query->where('role', 'Sonographer');
@@ -377,10 +373,6 @@ class ClientController extends Controller
                 $eligible->sonographer_id = $sonographer->client_id;
                 $eligible->booking_id = $booking->id;
                 $eligible->save();
-                // EligibleSonographer::create(
-                //     ['sonographer_id' => $sonographer->client_id],
-                //     ['booking_id' => $bookingID]
-                // );
                 Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
             }
             
@@ -396,11 +388,12 @@ class ClientController extends Controller
             // $bookingList = EligibleSonographer::with('booking.service', 'booking.service_category', 'booking.doctor', 'booking.sonographer')->where('sonographer_id', $client_id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
         
             $bookingList = EligibleSonographer::with([
-                'booking.reservations' => function ($query) {
+                'booking.reservation' => function ($query) {
                     $query->with(['serviceCategories', 'services.category']);
                 },
                 'booking.doctor',
                 'booking.sonographer',
+                'booking.preferences'
             ])
             ->where('sonographer_id', $client_id)
             ->whereIn('status', explode(',', $request->status))
@@ -453,11 +446,12 @@ class ClientController extends Controller
         }
     }
 
+    // Api for admin
     public function bookingList() {
         try {
             // $bookings = Booking::with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
             $bookings = Booking::with([
-                'reservations' => function ($query) {
+                'reservation' => function ($query) {
                     $query->with(['serviceCategories', 'services']);
                 },
                 'doctor',
@@ -471,13 +465,14 @@ class ClientController extends Controller
         }
     }
 
+    // Api for doctor
     public function getDoctorBookings(Request $request) {
         try {
             // $bookings = Booking::where('doctor_id', Auth::user()->id)->whereIn('status', explode(',', $request->status))->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
             $bookings = Booking::where('doctor_id', Auth::user()->id)
                 ->whereIn('status', explode(',', $request->status))
                 ->with([
-                    'reservations' => function ($query) {
+                    'reservation' => function ($query) {
                         $query->with(['serviceCategories', 'services.category']);
                     },
                     'sonographer',
@@ -491,13 +486,14 @@ class ClientController extends Controller
         }
     }
 
+    // Api for doctor
     public function showBooking($id) {
         try {
             // $bookings = Booking::where('id', $id)->with('service_category')->with('service')->with('doctor')->with('sonographer')->with('preferences')->get();
 
             $bookings = Booking::where('id', $id)
                 ->with([
-                    'reservations' => function ($query) {
+                    'reservation' => function ($query) {
                         $query->with(['serviceCategories' ,'services.category']);
                     },
                     'sonographer',
@@ -516,10 +512,116 @@ class ClientController extends Controller
             if (Auth::guard('client-api')->check()) {
                 return sendResponse(true, 200, 'Token is valid', [], 200);
             } else {
-                return sendResponse(false, 401, 'Token is not valid, Please login again!', [], 200);
+                return sendResponse(false, 200, 'Token is not valid, Please login again!', [], 200);
             }
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+
+    // My changes in process working
+    public function completedBookingRequest($id) {
+
+        Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        // Get the bank account details from the request
+        $bankAccountDetails = [
+            'account_number' => '000123456789',
+            'routing_number' => '110000000',
+            'country' => 'US'
+            // Add other necessary details
+        ];
+
+        // Create a bank account token
+        $token = Token::create([
+            'bank_account' => $bankAccountDetails,
+        ]);
+
+        // Transfer funds using the bank account token
+        try {
+            $transfer = Transfer::create([
+                'amount' => 1000, // Amount in cents
+                'currency' => 'usd',
+                'destination' => $token->bank_account, // Use 'destination' instead of 'source'
+            ]);
+
+            // Handle success
+            return response()->json(['success' => true, 'transfer' => $transfer]);
+        } catch (\Exception $e) {
+            // Handle error
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+
+
+
+
+
+
+        try {
+            $booking = Booking::find($id);
+            $chargeAmount = $booking->charge_amount;
+            
+            $findPackage = Package::find($booking->package_id);
+            $packageAmount = $findPackage->payment;
+
+            // minus the payment in cent not in percentage
+            $transferAmount = $chargeAmount - $packageAmount;
+
+            // getting bank details of sonographer with high priority
+            $findSonographerBank = BankInfo::where('client_id', $booking->sonographer_id)
+                ->where('priority', 'high')
+                ->first();
+            $bankDetails = $findSonographerBank;
+
+
+            Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            $transfer = Transfer::create([
+                'amount' => $transferAmount,
+                'currency' => $bankDetails['currency'],
+                'destination' => $bankDetails['iban'],
+                'source_type' => 'bank_account',
+            ]);
+        
+            // $this->transferToBankAccount($bankDetails, $transferAmount);
+            $booking->status = 'Completed';
+            $booking->save();
+            
+            return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+
+    private function transferToBankAccount($bankDetails, $transferAmount)
+    {
+        Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        try {
+            // Create a transfer
+            $transfer = Transfer::create([
+                'amount' => $transferAmount,
+                'currency' => $bankDetails['currency'],
+                'destination' => $bankDetails['iban'],
+                'source_type' => 'bank_account',
+            ]);
+            return response()->json(['success' => true, 'transfer' => $transfer]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        // $customerID = $bankDetails->stripe_token; // Replace with your actual customer ID
+        // $customer = \Stripe\Customer::retrieve($customerID);                                                
+
+        // // Create a transfer to the bank account associated with the token
+        // $transfer = Transfer::create([
+        //     'amount' => $transferAmount, // amount already in cents
+        //     'currency' => $bankDetails->currency, // Adjust the currency as needed
+        //     'source_type' => 'customer',
+        //     'source' => $customerID,
+        //     'destination' => $customer->default_source,
+        //     'description' => 'Bank transfer from SonoLinq',
+        // ]);
+    
+        // return $transfer;
+    }
+    // My xhanges in process working
 }

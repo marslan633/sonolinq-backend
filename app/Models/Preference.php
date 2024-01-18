@@ -15,6 +15,5 @@ class Preference extends Model
         'sonographer_experience',
         'sonographer_registry',
         'sonographer_language',
-        'booking_id'
     ];
 }

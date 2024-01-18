@@ -12,6 +12,8 @@ class Booking extends Model
     protected $fillable = [
         'doctor_id',
         'sonographer_id',
+        'charge_amount',
+        'preference_id'
         // 'service_category_id',
         // 'service_id',
         // 'type',
@@ -21,7 +23,7 @@ class Booking extends Model
 
     public function preferences()
     {
-        return $this->hasOne(Preference::class, 'booking_id', 'id');
+        return $this->hasOne(Preference::class, 'id', 'preference_id');
     }
 
     public function doctor() {
@@ -40,8 +42,13 @@ class Booking extends Model
     //     return $this->hasOne(Service::class, 'id', 'service_id');
     // }
 
-    public function reservations()
+    // public function reservations()
+    // {
+    //     return $this->hasMany(Reservation::class);
+    // }
+
+        public function reservation()
     {
-        return $this->hasMany(Reservation::class);
+        return $this->hasOne(Reservation::class);
     }
 }

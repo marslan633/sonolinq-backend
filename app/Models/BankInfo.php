@@ -9,8 +9,9 @@ class BankInfo extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['client_id','name', 'bank', 'branch_address', 'iban', 'swift_code', 'routing_number', 'status', 'priority'];
+    protected $fillable = ['client_id','name', 'bank', 'branch_address', 'iban', 'swift_code', 'routing_number', 'status', 'priority', 'country', 'currency', 'stripe_token'];
 
+    protected $hidden = ['stripe_token'];
 
     public function client()
     {
