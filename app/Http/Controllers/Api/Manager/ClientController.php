@@ -300,6 +300,7 @@ class ClientController extends Controller
             }
             $preference = Preference::create($preference);
             
+            $preferenceID = $preference->id;
 
             foreach ($request->reservations as $reservationData) {
                 
@@ -312,7 +313,7 @@ class ClientController extends Controller
                     $booking['charge_amount'] = $charge->amount;
                 }
                 
-                $booking['preference_id']= $preference->id; 
+                $booking['preference_id']= $preferenceID; 
                 
                 $booking = Booking::create($booking);
 
@@ -327,55 +328,56 @@ class ClientController extends Controller
 
                 $reservation->serviceCategories()->attach($reservationData['service_category_id']);
                 $reservation->services()->attach($reservationData['service_id']);
+
+
+                // Here we are assigning the booking to selected sonographers
+                // Run eligibility check for sonographer
+                $gender = $request->input('sonographer_gender');
+                $level = $request->input('sonographer_level');
+                $experience = $request->input('sonographer_experience');
+                $register_no = $request->input('sonographer_registery');
+                $language = $request->input('sonographer_language');
+                
+                $records = Company::with('client')
+                    ->whereHas('client', function ($query) {
+                        $query->where('role', 'Sonographer');
+                    })
+                    ->when($level, function ($query, $level) {
+                        $query->where('level', $level);
+                    })
+                    ->when($experience, function ($query, $experience) {
+                        $query->where('years_of_experience', '>=', $experience);
+                    })
+                    ->when($register_no, function ($query) {
+                        $query->whereNotNull('register_no');
+                    })
+                    ->when($language, function ($query) use ($language) {
+                        $query->where(function ($subQuery) use ($language) {
+                            foreach ($language as $lang) {
+                                $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+                            }
+                        });
+                    })
+                    ->when($gender, function ($query, $gender) {
+                        $query->whereHas('client', function ($subQuery) use ($gender) {
+                            $subQuery->where('gender', $gender)
+                                ->orWhereNull('gender')
+                                ->orWhere('gender', '');
+                        });
+                    })
+                    ->get();
+
+                $sonographers = $records;
+
+                foreach($sonographers as $sonographer) {
+                    $eligible = new EligibleSonographer();
+                    $eligible->sonographer_id = $sonographer->client_id;
+                    $eligible->booking_id = $booking->id;
+                    $eligible->save();
+                    Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
+                }
             }
 
-            
-            // Run eligibility check for sonographer
-            $gender = $request->input('sonographer_gender');
-            $level = $request->input('sonographer_level');
-            $experience = $request->input('sonographer_experience');
-            $register_no = $request->input('sonographer_registery');
-            $language = $request->input('sonographer_language');
-            
-            $records = Company::with('client')
-                ->whereHas('client', function ($query) {
-                    $query->where('role', 'Sonographer');
-                })
-                ->when($level, function ($query, $level) {
-                    $query->where('level', $level);
-                })
-                ->when($experience, function ($query, $experience) {
-                    $query->where('years_of_experience', '>=', $experience);
-                })
-                ->when($register_no, function ($query) {
-                    $query->whereNotNull('register_no');
-                })
-                ->when($language, function ($query) use ($language) {
-                    $query->where(function ($subQuery) use ($language) {
-                        foreach ($language as $lang) {
-                            $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
-                        }
-                    });
-                })
-                ->when($gender, function ($query, $gender) {
-                    $query->whereHas('client', function ($subQuery) use ($gender) {
-                        $subQuery->where('gender', $gender)
-                            ->orWhereNull('gender')
-                            ->orWhere('gender', '');
-                    });
-                })
-                ->get();
-
-            $sonographers = $records;
-
-            foreach($sonographers as $sonographer) {
-                $eligible = new EligibleSonographer();
-                $eligible->sonographer_id = $sonographer->client_id;
-                $eligible->booking_id = $booking->id;
-                $eligible->save();
-                Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
-            }
-            
             return sendResponse(true, 200, 'Appointment Created Successfully!', $preference, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
