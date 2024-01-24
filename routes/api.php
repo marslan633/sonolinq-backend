@@ -101,6 +101,8 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
     // Doctor complete their appointment (booking) in progress route
     Route::get('/completed-booking-request/{id}', [ClientController::class, 'completedBookingRequest']);
+
+    Route::patch('/update-booking-status/{id}', [ClientController::class, 'updateBookingStatus']);
 }); 
 
 

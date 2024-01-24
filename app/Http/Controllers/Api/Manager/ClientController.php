@@ -524,8 +524,104 @@ class ClientController extends Controller
         }
     }
 
-    // My changes in process working
+    public function updateBookingStatus(Request $request, $id) {
+        try {
+            $booking = Booking::find($id);
+            $booking->status = $request->status;
+            $booking->save();
+
+            $bookingObj = Booking::where('id', $booking->id)
+                ->with([
+                    'reservation' => function ($query) {
+                        $query->with(['serviceCategories' ,'services.category']);
+                    },
+                    'sonographer',
+                    'preferences',
+                    'doctor'
+                ])
+                ->first();
+            
+            return sendResponse(true, 200, 'Booking Status Update Successfully!', $bookingObj, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+
     public function completedBookingRequest($id) {
+        try {
+            $booking = Booking::with('reservation')->where('id', $id)->first();
+            
+            $bookingAmount = $booking->reservation['amount'];
+            
+            $sonographerID = $booking->sonographer_id;
+
+            // find sonographer package
+            $findPackage = Package::whereHas('clients', function ($query) use ($sonographerID) {
+                $query->where('client_id', $sonographerID);
+            })->first();
+
+
+            if ($findPackage) {
+                $packageType = $findPackage->type;
+
+                if($packageType == 'percentage') {
+                    $percentage = $findPackage->payment;
+                    $amountToSubtract = ($percentage / 100) * $bookingAmount;
+                } elseif ($packageType === 'fixed') {
+                    $fixedAmount = $findPackage->payment; 
+                    $amountToSubtract = $fixedAmount;
+                }
+
+                // Subtract the calculated amount
+                $finalAmount = $bookingAmount - $amountToSubtract;     
+                
+                // find bank of sonographer
+                $highPriorityBank = BankInfo::where('client_id', $sonographerID)
+                    ->where('priority', 'high')
+                    ->first();
+
+                if ($highPriorityBank) {
+                    // High priority bank found
+                    $selectedBank = $highPriorityBank;
+                } else {
+                    // High priority not found, try medium priority
+                    $mediumPriorityBank = BankInfo::where('client_id', $sonographerID)
+                        ->where('priority', 'medium')
+                        ->first();
+
+                    if ($mediumPriorityBank) {
+                        // Medium priority bank found
+                        $selectedBank = $mediumPriorityBank;
+                    } else {
+                            // Medium priority not found, try low priority
+                            $lowPriorityBank = BankInfo::where('client_id', $sonographerID)
+                                ->where('priority', 'low')
+                                ->first();
+
+                            if ($lowPriorityBank) {
+                                // Low priority bank found
+                                $selectedBank = $lowPriorityBank;
+                            } else {
+                                // No banks found for the sonographer
+                                return sendResponse(false, 200, 'No banks found for the sonographer', [], 200);
+                            }
+                    }
+                }
+
+                $booking->status = 'Completed';
+                $booking->save();
+                return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
+            } else {
+                return sendResponse(false, 200, 'Package not found for sonographer!', [], 200);
+            }
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    // My changes in process working
+    public function completedBookingRequestStripe($id) {
 // Set your Stripe secret key
 Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
 
