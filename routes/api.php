@@ -85,8 +85,8 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
         'bank-info' => BankInfoController::class,
     ]);
 
-    Route::get('/get-client/{id}', [ClientController::class, 'getClient']);
-    Route::patch('/update-client/{id}', [ClientController::class, 'updateClient']);
+    Route::get('/get-client', [ClientController::class, 'getClient']);
+    Route::patch('/update-client', [ClientController::class, 'updateClient']);
 
     // Sonographer eligibility check API
     

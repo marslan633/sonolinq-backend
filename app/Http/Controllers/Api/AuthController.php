@@ -120,7 +120,7 @@ class AuthController extends Controller
             $client = Client::create($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
                 $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
-                $client->update();
+                $client->save();
             }
             /*Creating Company*/
             $company = $request->all();

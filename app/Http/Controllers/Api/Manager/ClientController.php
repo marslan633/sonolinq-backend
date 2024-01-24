@@ -18,6 +18,7 @@ use Stripe\Transfer;
 use Stripe\Payout;
 use Stripe\Customer;
 use Stripe\Token;
+use Stripe\BankAccount;
 
 class ClientController extends Controller
 {
@@ -27,7 +28,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         try {
-            $staff = Client::with('company.type_of_services')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $staff = Client::with('company.type_of_services', 'addresses')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'Clients Fetched Successfully!', $staff, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -168,8 +169,9 @@ class ClientController extends Controller
     }
 
 
-    public function getClient($id) {
+    public function getClient() { 
         try {
+            $id =  Auth::guard('client-api')->user()->id;
             $client = Client::with('company.type_of_services', 'addresses')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
@@ -178,10 +180,11 @@ class ClientController extends Controller
     }
 
 
-    public function updateClient(Request $request, String $id)
+    public function updateClient(Request $request)
     {
         try {
             /*Creating Client*/
+            $id =  Auth::guard('client-api')->user()->id;
             $client = Client::find($id);
             $client->update($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
@@ -523,44 +526,298 @@ class ClientController extends Controller
 
     // My changes in process working
     public function completedBookingRequest($id) {
+// Set your Stripe secret key
+Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
 
-        Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
-        // Get the bank account details from the request
-        $bankAccountDetails = [
+    $account = \Stripe\Account::retrieve('acct_1ObeZlD0H0LhSNKm');
+
+    // Update the account to include tos_acceptance
+    $account->tos_acceptance = [
+        'date' => time(),
+        'ip' => $_SERVER['REMOTE_ADDR'], // Assumes you're not using a proxy
+    ];
+    $account->save();
+
+
+    $transfer = \Stripe\Transfer::create([
+        'amount' => 1000,  // amount in cents
+        'currency' => 'usd',
+        'destination' => $account->id,  // customer's ID
+    ]);
+
+    return $transfer;
+
+
+    
+
+    
+try {
+$account = \Stripe\Account::create([
+        'type' => 'custom',
+        'country' => 'US',  // Replace with the connected account's country code
+        'email' => 'connected_account@example.com',  // Email of the connected account
+        'capabilities' => [
+            'card_payments' => ['requested' => true],
+            'transfers' => ['requested' => true],
+        ],
+        'tos_acceptance' => [
+            'date' => time(),
+            'ip' => $_SERVER['REMOTE_ADDR'],
+        ],
+    ]);
+    
+    $connected_account_id = $account->id;
+
+    // Create a bank account token using the connected account's bank account details
+    $bank_account_token = \Stripe\Token::create([
+        'bank_account' => [
+            'country' => 'US',  // Replace with the connected account's country code
+            'currency' => 'usd',
+            'account_holder_name' => 'John Doe',  // Replace with the account holder's name
+            'account_holder_type' => 'individual',  // Replace with 'individual' or 'company'
+            'routing_number' => '110000000',  // Replace with the connected account's bank routing number
+            'account_number' => '000123456789',  // Replace with the connected account's bank account number
+        ],
+    ]);
+
+
+    // $account = \Stripe\Account::retrieve($connected_account_id);
+
+    // // Update the account to include tos_acceptance
+    // $account->tos_acceptance = [
+    //     'date' => time(),
+    //     'ip' => $_SERVER['REMOTE_ADDR'], // Assumes you're not using a proxy
+    // ];
+    // $account->save();
+
+
+
+    // $external_account = $account->external_accounts->create([
+    //     'external_account' => $bank_account_token->id,
+    // ]);
+
+    
+
+    // Attach the bank account token to the connected account
+    $external_account = \Stripe\Account::createExternalAccount(
+        $connected_account_id,
+        [
+            'external_account' => $bank_account_token->id,
+        ]
+    );
+
+
+    
+    // Access the bank account ID
+    $bankAccountId = $external_account->id;
+
+
+    $transfer = \Stripe\Transfer::create([
+        'amount' => 1000,  // amount in cents
+        'currency' => 'usd',
+        'destination' => $bankAccountId,  // customer's ID
+    ]);
+
+    return $transfer;
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    $customer = \Stripe\Customer::create([
+        'email' => 'customer@example.com', 
+        'description' => 'Customer description',
+    ]);
+   $customer_id = $customer->id;
+   
+    // Create a bank account token using the customer's bank account details
+    $bank_account_token = \Stripe\Token::create([
+        'bank_account' => [
+            'country' => 'US', 
+            'currency' => 'usd',
+            'account_holder_name' => 'John Doe', 
+            'account_holder_type' => 'individual', 
+            'routing_number' => '110000000', 
             'account_number' => '000123456789',
-            'routing_number' => '110000000',
-            'country' => 'US'
-            // Add other necessary details
-        ];
+        ],
+    ]);
 
-        // Create a bank account token
-        $token = Token::create([
-            'bank_account' => $bankAccountDetails,
-        ]);
+    // Attach the bank account to the customer
+    $customer = \Stripe\Customer::update($customer_id, [
+        'source' => $bank_account_token->id,
+    ]);
 
-        // Transfer funds using the bank account token
+    $transfer = \Stripe\Transfer::create([
+        'amount' => 1000,  // amount in cents
+        'currency' => 'usd',
+        'destination' => $customer_id,  // customer's ID
+    ]);
+
+    return $transfer;
+
+    
+} catch (\Stripe\Exception\ApiErrorException $e) {
+    // Handle API errors
+    return $e->getMessage();
+}
+
+
+// Test bank details
+$testBankDetails = [
+    'country' => 'US',
+    'currency' => 'usd',
+    'account_number' => '000123456789', // Use a valid test account number
+    'routing_number' => '110000000', // Use a valid test routing number (9 digits)
+];
+
+// Create a Bank Account token
+$bankToken = Token::create([
+    'bank_account' => [
+        'country' => $testBankDetails['country'],
+        'currency' => $testBankDetails['currency'],
+        'account_holder_name' => 'Stripe Test User',
+        'account_holder_type' => 'individual',
+        'account_number' => $testBankDetails['account_number'],
+        'routing_number' => $testBankDetails['routing_number'],
+    ],
+]);
+
+// Introduce a brief delay (e.g., 2 seconds) to allow token propagation
+sleep(2);
+
+// Use the Bank Account token as the destination for a Payout
+$payout = Payout::create([
+    'amount' => 1000, // Replace with the actual amount you want to transfer (in cents)
+    'currency' => 'usd',
+    'destination' => 'acct_1ObQMmRasPmNVu4o', // Use the Bank Account token as the destination
+]);
+// Check the status of the payout
+if ($payout->status === 'paid') {
+    // Payout was successful
+    // You can handle success here
+    return "Payout successful!";
+} else {
+    // Payout failed
+    // You can handle the failure here
+    return "Payout failed: " . $payout->failure_message;
+}
+
+        
+
+        // Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        // // Get the bank account details from the request
+        // $bankAccountDetails = [
+        //     'account_number' => '000123456789',
+        //     'routing_number' => '110000000',
+        //     'country' => 'US'
+        //     // Add other necessary details
+        // ];
+
+        // // Create a bank account token
+        // $token = Token::create([
+        //     'bank_account' => $bankAccountDetails,
+        // ]);
+
+        // // Transfer funds using the bank account token
+        // try {
+        //     $transfer = Transfer::create([
+        //         'amount' => 1000, // Amount in cents
+        //         'currency' => 'usd',
+        //         'destination' => $token->bank_account, // Use 'destination' instead of 'source'
+        //     ]);
+
+        //     // Handle success
+        //     return response()->json(['success' => true, 'transfer' => $transfer]);
+        // } catch (\Exception $e) {
+        //     // Handle error
+        //     return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        // }
+
+
+
+
+
+
         try {
-            $transfer = Transfer::create([
-                'amount' => 1000, // Amount in cents
-                'currency' => 'usd',
-                'destination' => $token->bank_account, // Use 'destination' instead of 'source'
-            ]);
+            $booking = Booking::with('reservation')->where('id', $id)->first();
+            
+            $bookingAmount = $booking->reservation['amount'];
+            
+            $sonographerID = $booking->sonographer_id;
 
-            // Handle success
-            return response()->json(['success' => true, 'transfer' => $transfer]);
-        } catch (\Exception $e) {
-            // Handle error
-            return response()->json(['success' => false, 'error' => $e->getMessage()]);
-        }
+            // find sonographer package
+            $findPackage = Package::whereHas('clients', function ($query) use ($sonographerID) {
+                $query->where('client_id', $sonographerID);
+            })->first();
 
 
+            if ($findPackage) {
+                $packageType = $findPackage->type;
 
+                if($packageType == 'percentage') {
+                    $percentage = $findPackage->payment;
+                    $amountToSubtract = ($percentage / 100) * $bookingAmount;
+                } elseif ($packageType === 'fixed') {
+                    $fixedAmount = $findPackage->payment; 
+                    $amountToSubtract = $fixedAmount;
+                }
 
+                // Subtract the calculated amount
+                $finalAmount = $bookingAmount - $amountToSubtract;     
+                
+                // find bank of sonographer
+                $highPriorityBank = BankInfo::where('client_id', $sonographerID)
+                    ->where('priority', 'high')
+                    ->first();
 
+                if ($highPriorityBank) {
+                    // High priority bank found
+                    $selectedBank = $highPriorityBank;
+                } else {
+                    // High priority not found, try medium priority
+                    $mediumPriorityBank = BankInfo::where('client_id', $sonographerID)
+                        ->where('priority', 'medium')
+                        ->first();
 
-        try {
-            $booking = Booking::find($id);
-            $chargeAmount = $booking->charge_amount;
+                    if ($mediumPriorityBank) {
+                        // Medium priority bank found
+                        $selectedBank = $mediumPriorityBank;
+                    } else {
+                            // Medium priority not found, try low priority
+                            $lowPriorityBank = BankInfo::where('client_id', $sonographerID)
+                                ->where('priority', 'low')
+                                ->first();
+
+                            if ($lowPriorityBank) {
+                                // Low priority bank found
+                                $selectedBank = $lowPriorityBank;
+                            } else {
+                                // No banks found for the sonographer
+                                return sendResponse(false, 200, 'No banks found for the sonographer', [], 200);
+                            }
+                    }
+                }
+
+                return $selectedBank;
+                
+                
+            } else {
+                return sendResponse(false, 200, 'Package not found for sonographer!', [], 200);
+            }
+
+            return $packages;
+            
             
             $findPackage = Package::find($booking->package_id);
             $packageAmount = $findPackage->payment;
