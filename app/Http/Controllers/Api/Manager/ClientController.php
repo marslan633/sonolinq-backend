@@ -420,6 +420,7 @@ class ClientController extends Controller
             $sonograhper = EligibleSonographer::find($id);
             // $sonograhper->status = 'Active';
             // $sonograhper->save();
+            
 
             $booking = Booking::find($sonograhper->booking_id);
             $booking->sonographer_id = $sonograhper->sonographer_id;
