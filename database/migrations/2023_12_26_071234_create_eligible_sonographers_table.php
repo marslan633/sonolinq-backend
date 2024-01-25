@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreign('sonographer_id')->references('id')->on('clients')->onDelete('cascade');
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
 
-            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected'])->default('Pending');
+            // $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected'])->default('Pending');
             $table->timestamps();
         });
     }

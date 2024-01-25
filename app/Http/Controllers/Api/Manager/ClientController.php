@@ -401,7 +401,10 @@ class ClientController extends Controller
                 'booking.preferences'
             ])
             ->where('sonographer_id', $client_id)
-            ->whereIn('status', explode(',', $request->status))
+            // ->whereIn('status', explode(',', $request->status))
+            ->whereHas('booking', function ($query) use ($request) {
+                $query->whereIn('status', explode(',', $request->status));
+            })
             ->orderBy('id', 'desc')
             ->get();
 
@@ -415,8 +418,8 @@ class ClientController extends Controller
     public function acceptBookingRequest($id) {
         try {
             $sonograhper = EligibleSonographer::find($id);
-            $sonograhper->status = 'Active';
-            $sonograhper->save();
+            // $sonograhper->status = 'Active';
+            // $sonograhper->save();
 
             $booking = Booking::find($sonograhper->booking_id);
             $booking->sonographer_id = $sonograhper->sonographer_id;
@@ -524,10 +527,17 @@ class ClientController extends Controller
         }
     }
 
+    // this api for doctor/sonographer
     public function updateBookingStatus(Request $request, $id) {
         try {
             $booking = Booking::find($id);
             $booking->status = $request->status;
+            if($request->doctor_comments) {
+                $booking->doctor_comments = $request->doctor_comments;
+            }
+            if($request->sonographer_comments) {
+                $booking->sonographer_comments = $request->sonographer_comments;
+            }
             $booking->save();
 
             $bookingObj = Booking::where('id', $booking->id)

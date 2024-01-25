@@ -12,7 +12,7 @@ class EligibleSonographer extends Model
     protected $fillable = [
         'sonographer_id',
         'booking_id',
-        'status'
+        // 'status'
     ];
 
 

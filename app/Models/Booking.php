@@ -13,12 +13,14 @@ class Booking extends Model
         'doctor_id',
         'sonographer_id',
         'charge_amount',
-        'preference_id'
+        'preference_id',
         // 'service_category_id',
         // 'service_id',
         // 'type',
         // 'date',
         // 'time',
+        'doctor_comments',
+        'sonographer_comments'
     ];
 
     public function preferences()
