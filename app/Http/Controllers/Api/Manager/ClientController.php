@@ -91,7 +91,7 @@ class ClientController extends Controller
             
             /*Creating Address*/
             if (isset($request->personal_address)) {
-                $client->addresses()->create((array)json_decode($request->personal_address));
+                $client->addresses()->update((array)json_decode($request->personal_address));
             }
 
             
@@ -223,7 +223,7 @@ class ClientController extends Controller
             
             /*Creating Address*/
             if (isset($request->personal_address)) {
-                $client->addresses()->create((array)json_decode($request->personal_address));
+                $client->addresses()->update((array)json_decode($request->personal_address));
             }
 
             
