@@ -83,10 +83,21 @@ class ClientController extends Controller
                 $client->company->update($company);
             }
 
-            if (isset($request->type_of_services)) { 
+            // if (isset($request->type_of_services)) { 
+            //     $company = $client->company;
+            //     $company->type_of_services()->detach();
+            //     $company->type_of_services()->attach($request->type_of_services);
+            // }
+
+            if (isset($request->type_of_services)) {
                 $company = $client->company;
                 $company->type_of_services()->detach();
-                $company->type_of_services()->attach($request->type_of_services);
+
+                $serviceIds = json_decode($request->type_of_services, true);
+
+                foreach ($serviceIds as $serviceId) {
+                    $company->type_of_services()->attach($serviceId);
+                }
             }
             
             /*Creating Address*/
@@ -215,10 +226,21 @@ class ClientController extends Controller
                 $client->company->update($company);
             }
 
-            if (isset($request->type_of_services)) { 
+            // if (isset($request->type_of_services)) { 
+            //     $company = $client->company;
+            //     $company->type_of_services()->detach();
+            //     $company->type_of_services()->attach($request->type_of_services);
+            // }
+
+            if (isset($request->type_of_services)) {
                 $company = $client->company;
                 $company->type_of_services()->detach();
-                $company->type_of_services()->attach($request->type_of_services);
+
+                $serviceIds = json_decode($request->type_of_services, true);
+
+                foreach ($serviceIds as $serviceId) {
+                    $company->type_of_services()->attach($serviceId);
+                }
             }
             
             /*Creating Address*/
