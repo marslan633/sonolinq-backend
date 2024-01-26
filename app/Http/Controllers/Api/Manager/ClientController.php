@@ -58,7 +58,7 @@ class ClientController extends Controller
             /*Creating Client*/
             $client = Client::find($id);
             if ($request->hasFile('non_solicitation_agreement')) {
-                Storage::disk('public')->delete($client->non_solicitation_agreement);
+                !is_null($client->non_solicitation_agreement) && Storage::disk('public')->delete($client->non_solicitation_agreement);
             }
             $client->update($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
@@ -69,15 +69,15 @@ class ClientController extends Controller
             $company = $request->all();
             if ($request->hasFile('reg_no_letter')) {
                 $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->reg_no_letter);
+                !is_null($client->company->reg_no_letter) && Storage::disk('public')->delete($client->company->reg_no_letter);
             }
             if ($request->hasFile('personal_director_id')) {
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->personal_director_id);
+                !is_null($client->company->personal_director_id) && Storage::disk('public')->delete($client->company->personal_director_id);
             }
             if ($request->hasFile('prove_of_address')) {
                 $company['prove_of_address'] = $request->file('prove_of_address')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->prove_of_address);
+                 !is_null($client->company->prove_of_address) && Storage::disk('public')->delete($client->company->prove_of_address);
             }
             if (isset($request->company_name)) {
                 $client->company->update($company);
@@ -190,7 +190,7 @@ class ClientController extends Controller
             $id =  Auth::guard('client-api')->user()->id;
             $client = Client::find($id);
             if ($request->hasFile('non_solicitation_agreement')) {
-                Storage::disk('public')->delete($client->non_solicitation_agreement);
+                !is_null($client->non_solicitation_agreement) && Storage::disk('public')->delete($client->non_solicitation_agreement);
             }
             $client->update($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
@@ -201,15 +201,15 @@ class ClientController extends Controller
             $company = $request->all();
             if ($request->hasFile('reg_no_letter')) {
                 $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->reg_no_letter);
+                !is_null($client->company->reg_no_letter) && Storage::disk('public')->delete($client->company->reg_no_letter);
             }
             if ($request->hasFile('personal_director_id')) {
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->personal_director_id);
+                !is_null($client->company->personal_director_id) && Storage::disk('public')->delete($client->company->personal_director_id);
             }
             if ($request->hasFile('prove_of_address')) {
                 $company['prove_of_address'] = $request->file('prove_of_address')->store('companyImages', 'public');
-                Storage::disk('public')->delete($client->company->prove_of_address);
+                !is_null($client->company->prove_of_address) && Storage::disk('public')->delete($client->company->prove_of_address);
             }
             if (isset($request->company_name)) {
                 $client->company->update($company);
