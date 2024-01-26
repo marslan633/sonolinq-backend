@@ -57,10 +57,13 @@ class ClientController extends Controller
         try {
             /*Creating Client*/
             $client = Client::find($id);
+            if ($request->hasFile('non_solicitation_agreement')) {
+                Storage::disk('public')->delete($client->non_solicitation_agreement);
+            }
             $client->update($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
                 $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
-                $client->update();
+                $client->save();
             }
             /*Creating Company*/
             $company = $request->all();
@@ -77,7 +80,7 @@ class ClientController extends Controller
                 Storage::disk('public')->delete($client->company->prove_of_address);
             }
             if (isset($request->company_name)) {
-                $client->company()->update($company);
+                $client->company->update($company);
             }
 
             if (isset($request->type_of_services)) { 
@@ -186,10 +189,13 @@ class ClientController extends Controller
             /*Creating Client*/
             $id =  Auth::guard('client-api')->user()->id;
             $client = Client::find($id);
+            if ($request->hasFile('non_solicitation_agreement')) {
+                Storage::disk('public')->delete($client->non_solicitation_agreement);
+            }
             $client->update($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
                 $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
-                $client->update();
+                $client->save();
             }
             /*Creating Company*/
             $company = $request->all();
@@ -206,7 +212,7 @@ class ClientController extends Controller
                 Storage::disk('public')->delete($client->company->prove_of_address);
             }
             if (isset($request->company_name)) {
-                $client->company()->update($company);
+                $client->company->update($company);
             }
 
             if (isset($request->type_of_services)) { 

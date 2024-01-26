@@ -22,6 +22,22 @@ class Client extends Authenticatable
      */
     protected $guarded = ['id', '_token', '_method'];
 
+    protected $fillable = [
+        'reg_no',
+        'full_name',
+        'email',
+        'email_verified_at',
+        'phone_number',
+        'referrer_id',
+        'password',
+        'is_verified',
+        'terms',
+        'status',
+        'role',
+        'gender',
+        'non_solicitation_agreement',
+    ];
+
     /**Setting Password Attribute
      *
      * **/
