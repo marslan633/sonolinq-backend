@@ -1018,4 +1018,65 @@ if ($payout->status === 'paid') {
         // return $transfer;
     }
     // My xhanges in process working
+
+
+    // Stats API for admin
+    public function adminStats() {
+        try {
+            $totalDoctors = Client::where('role', 'Doctor/Facility')->count();
+            $totalSonographers = Client::where('role', 'Sonographer')->count();
+            $totalUsers = Client::count();
+            
+            $activeBooking = Booking::where('status', 'Active')->count();
+            $deactiveBooking = Booking::where('status', 'Deactive')->count();
+            $pendingBooking = Booking::where('status', 'Pending')->count();
+            $deliveredBooking = Booking::where('status', 'Delivered')->count();
+            $completedBooking = Booking::where('status', 'Completed')->count();
+            $rejectedBooking = Booking::where('status', 'Rejected')->count();
+
+            $stats = [
+                'totalDoctors' => $totalDoctors,
+                'totalSonographers' => $totalSonographers,
+                'totalUsers' => $totalUsers,
+                'activeBooking' => $activeBooking,
+                'deactiveBooking' => $deactiveBooking,
+                'pendingBooking' => $pendingBooking,
+                'deliveredBooking' => $deliveredBooking,
+                'completedBooking' => $completedBooking,
+                'rejectedBooking' => $rejectedBooking,
+            ];
+
+            return sendResponse(true, 200, 'Admin Stats!', $stats, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    // Stats API for client
+    public function clientStats() {
+        try {
+            $client = Auth::guard('client-api')->user();
+            $bookingType = ($client->role == "Sonographer") ? 'sonographer_id' : 'doctor_id';
+
+            $activeBooking = Booking::where($bookingType, $client->id)->where('status', 'Active')->count();
+            $deactiveBooking = Booking::where($bookingType, $client->id)->where('status', 'Deactive')->count();
+            $pendingBooking = Booking::where($bookingType, $client->id)->where('status', 'Pending')->count();
+            $deliveredBooking = Booking::where($bookingType, $client->id)->where('status', 'Delivered')->count();
+            $completedBooking = Booking::where($bookingType, $client->id)->where('status', 'Completed')->count();
+            $rejectedBooking = Booking::where($bookingType, $client->id)->where('status', 'Rejected')->count();
+
+            $stats = [
+                'activeBooking' => $activeBooking,
+                'deactiveBooking' => $deactiveBooking,
+                'pendingBooking' => $pendingBooking,
+                'deliveredBooking' => $deliveredBooking,
+                'completedBooking' => $completedBooking,
+                'rejectedBooking' => $rejectedBooking,
+            ];
+
+            return sendResponse(true, 200, 'Client Stats!', $stats, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
 }

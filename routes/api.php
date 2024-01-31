@@ -55,6 +55,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
 
     // get All booking for admin
     Route::get('/get-booking-list', [ClientController::class, 'bookingList']); 
+    Route::get('/dashboard-stats', [ClientController::class, 'adminStats']); 
 });
 
 
@@ -103,6 +104,8 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('/completed-booking-request/{id}', [ClientController::class, 'completedBookingRequest']);
 
     Route::patch('/update-booking-status/{id}', [ClientController::class, 'updateBookingStatus']);
+
+    Route::get('/dashboard-stats', [ClientController::class, 'clientStats']); 
 }); 
 
 
