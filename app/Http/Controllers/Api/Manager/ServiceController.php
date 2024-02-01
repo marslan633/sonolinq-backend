@@ -18,7 +18,7 @@ class ServiceController extends Controller
     public function index(Request $request)
     {
         try {
-            $services = Service::with('category')->where('user_id', auth()->user()->id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $services = Service::with('category')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

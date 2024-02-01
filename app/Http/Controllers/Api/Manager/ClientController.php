@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1026,6 +1026,8 @@ if ($payout->status === 'paid') {
             $totalDoctors = Client::where('role', 'Doctor/Facility')->count();
             $totalSonographers = Client::where('role', 'Sonographer')->count();
             $totalUsers = Client::count();
+            $totalServiceCategories = ServiceCategory::count(); 
+            $totalServices = Service::count();
             
             $activeBooking = Booking::where('status', 'Active')->count();
             $deactiveBooking = Booking::where('status', 'Deactive')->count();
@@ -1033,6 +1035,7 @@ if ($payout->status === 'paid') {
             $deliveredBooking = Booking::where('status', 'Delivered')->count();
             $completedBooking = Booking::where('status', 'Completed')->count();
             $rejectedBooking = Booking::where('status', 'Rejected')->count();
+            $totalEarning = Booking::where('status', 'Completed')->sum('charge_amount');
 
             $stats = [
                 'totalDoctors' => $totalDoctors,
@@ -1044,6 +1047,9 @@ if ($payout->status === 'paid') {
                 'deliveredBooking' => $deliveredBooking,
                 'completedBooking' => $completedBooking,
                 'rejectedBooking' => $rejectedBooking,
+                'totalServiceCategories' => $totalServiceCategories,
+                'totalServices' => $totalServices,
+                'totalEarning' => $totalEarning
             ];
 
             return sendResponse(true, 200, 'Admin Stats!', $stats, 200);
@@ -1064,7 +1070,9 @@ if ($payout->status === 'paid') {
             $deliveredBooking = Booking::where($bookingType, $client->id)->where('status', 'Delivered')->count();
             $completedBooking = Booking::where($bookingType, $client->id)->where('status', 'Completed')->count();
             $rejectedBooking = Booking::where($bookingType, $client->id)->where('status', 'Rejected')->count();
-
+            $totalEarning = Booking::where($bookingType, $client->id)->where('status', 'Completed')->sum('charge_amount');
+            $expectedEarning = Booking::where($bookingType, $client->id)->where('status', 'Active')->sum('charge_amount');
+            
             $stats = [
                 'activeBooking' => $activeBooking,
                 'deactiveBooking' => $deactiveBooking,
@@ -1072,6 +1080,8 @@ if ($payout->status === 'paid') {
                 'deliveredBooking' => $deliveredBooking,
                 'completedBooking' => $completedBooking,
                 'rejectedBooking' => $rejectedBooking,
+                'totalEarning'=> $totalEarning, 
+                'expectedEarning' => $expectedEarning,
             ];
 
             return sendResponse(true, 200, 'Client Stats!', $stats, 200);

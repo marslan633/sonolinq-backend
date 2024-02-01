@@ -16,7 +16,7 @@ class PackageController extends Controller
     public function index(Request $request)
     {
         try {
-            $packages = Package::with('clients')->where('user_id', auth()->user()->id)->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $packages = Package::with('clients')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'Packages Fetched Successfully!', $packages, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
