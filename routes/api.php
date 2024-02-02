@@ -8,6 +8,11 @@ use App\Http\Controllers\Api\Manager\ServiceCategoryController;
 use App\Http\Controllers\Api\Manager\PackageController;
 use App\Http\Controllers\Api\Manager\ServiceController;
 use App\Http\Controllers\Api\Client\BankInfoController;
+use App\Http\Controllers\Api\Manager\FaqController;
+use App\Http\Controllers\Api\Manager\LanguageController;
+use App\Http\Controllers\Api\Manager\EquipmentController;
+use App\Http\Controllers\Api\Manager\SonographerTypeController;
+use App\Http\Controllers\Api\Manager\SonographerTimeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -50,12 +55,22 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'service-category' => ServiceCategoryController::class,
         'service' => ServiceController::class,
         'package' => PackageController::class,
+        'faq' => FaqController::class,
+        'language' => LanguageController::class,
+        'equipment' => EquipmentController::class,
+        'sonographer-type' => SonographerTypeController::class,
+        'sonographer-time' => SonographerTimeController::class,
     ]);
 
 
     // get All booking for admin
     Route::get('/get-booking-list', [ClientController::class, 'bookingList']); 
     Route::get('/dashboard-stats', [ClientController::class, 'adminStats']); 
+
+    // Chart API's for Admin
+    Route::post('client-chart', [ClientController::class, 'clientChart']);
+    Route::post('total-earning-chart', [ClientController::class, 'totalEarningChart']);
+    Route::post('booking-chart', [ClientController::class, 'bookingChart']);
 });
 
 
@@ -106,6 +121,10 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('/update-booking-status/{id}', [ClientController::class, 'updateBookingStatus']);
 
     Route::get('/dashboard-stats', [ClientController::class, 'clientStats']); 
+
+    // Chart API's for Admin
+    Route::post('earning-chart', [ClientController::class, 'clientEarningChart']);
+    Route::post('booking-chart', [ClientController::class, 'clientBookingChart']);
 }); 
 
 
@@ -116,3 +135,8 @@ Route::get('/get-services', [ServiceController::class, 'getServices']);
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
 Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
 Route::get('/show-booking/{id}', [ClientController::class, 'showBooking']);
+Route::get('/get-faqs', [FaqController::class, 'getFaqs']);
+Route::get('/get-languages', [LanguageController::class, 'getLanguages']);
+Route::get('/get-equipment', [EquipmentController::class, 'getLanguages']);
+Route::get('/get-sonographer-types', [SonographerTypeController::class, 'getSonographerTypes']);
+Route::get('/get-sonographer-time', [SonographerTimeController::class, 'getSonographerTime']);
