@@ -268,6 +268,7 @@ class ClientController extends Controller
             $experience = $request->input('sonographer_experience');
             $register_no = $request->input('sonographer_registery');
             $language = $request->input('sonographer_language');
+            $equipment = $request->input('sonographer_equipment');
             
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
@@ -286,6 +287,13 @@ class ClientController extends Controller
                     $query->where(function ($subQuery) use ($language) {
                         foreach ($language as $lang) {
                             $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+                        }
+                    });
+                })
+                ->when($equipment, function ($query) use ($equipment) {
+                    $query->where(function ($subQuery) use ($equipment) {
+                        foreach ($equipment as $equi) {
+                            $subQuery->orWhere('type_of_equipment', 'LIKE', '%' . $equi . '%');
                         }
                     });
                 })
@@ -369,6 +377,7 @@ class ClientController extends Controller
                 $experience = $request->input('sonographer_experience');
                 $register_no = $request->input('sonographer_registery');
                 $language = $request->input('sonographer_language');
+                $equipment = $request->input('sonographer_equipment');
                 
                 $records = Company::with('client')
                     ->whereHas('client', function ($query) {
@@ -387,6 +396,13 @@ class ClientController extends Controller
                         $query->where(function ($subQuery) use ($language) {
                             foreach ($language as $lang) {
                                 $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+                            }
+                        });
+                    })
+                    ->when($equipment, function ($query) use ($equipment) {
+                        $query->where(function ($subQuery) use ($equipment) {
+                            foreach ($equipment as $equi) {
+                                $subQuery->orWhere('type_of_equipment', 'LIKE', '%' . $equi . '%');
                             }
                         });
                     })

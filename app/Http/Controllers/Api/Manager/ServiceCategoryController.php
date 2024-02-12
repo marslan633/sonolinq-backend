@@ -44,6 +44,7 @@ class ServiceCategoryController extends Controller
             $category->user_id = $id;
             $category->name = $request->name;
             $category->status = true;
+            $category->price = $request->price;
             $category->save();
             
             /*Retruing Response*/   

@@ -13,6 +13,7 @@ class ServiceCategory extends Model
         'user_id',
         'name',
         'status',
+        'price'
     ];
 
     public function products()
