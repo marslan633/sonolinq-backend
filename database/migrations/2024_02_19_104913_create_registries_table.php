@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('companies', function (Blueprint $table) {
+        Schema::create('registries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained();
-            $table->string('company_name')->nullable();
-            $table->boolean('is_vat')->default(false);
-            $table->text('personal_director_id')->nullable();
-            $table->text('prove_of_address')->nullable();
-            $table->softDeletes();
+            $table->foreignId('company_id')->constrained();
+            $table->string('register_no')->nullable();
+            $table->text('reg_no_letter')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('companies');
+        Schema::dropIfExists('registries');
     }
 };

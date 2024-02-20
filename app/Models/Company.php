@@ -15,9 +15,7 @@ class Company extends Model
     protected $fillable = [
         'client_id',
         'company_name',
-        'register_no',
         'is_vat',
-        'reg_no_letter',
         'personal_director_id',
         'prove_of_address',
         'years_of_experience',
@@ -42,5 +40,10 @@ class Company extends Model
 
     public function client() {
         return $this->hasOne(Client::class, 'id', 'client_id');
+    }
+
+    public function registries()
+    {
+        return $this->hasMany(Registry::class);
     }
 }

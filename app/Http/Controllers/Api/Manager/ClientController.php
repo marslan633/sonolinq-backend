@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +29,11 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         try {
-            $staff = Client::with('company.type_of_services', 'addresses')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $staff = Client::with('company.type_of_services', 'company.registries', 'addresses')
+                ->whereIn('status', explode(',', $request->status))
+                ->orderBy('id', 'desc')
+                ->get();
+
             return sendResponse(true, 200, 'Clients Fetched Successfully!', $staff, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -43,7 +47,7 @@ class ClientController extends Controller
     {
         
         try {
-            $client = Client::with('company.type_of_services', 'addresses')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'addresses')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -68,10 +72,7 @@ class ClientController extends Controller
             }
             /*Creating Company*/
             $company = $request->all();
-            if ($request->hasFile('reg_no_letter')) {
-                $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-                !is_null($client->company->reg_no_letter) && Storage::disk('public')->delete($client->company->reg_no_letter);
-            }
+
             if ($request->hasFile('personal_director_id')) {
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
                 !is_null($client->company->personal_director_id) && Storage::disk('public')->delete($client->company->personal_director_id);
@@ -89,6 +90,48 @@ class ClientController extends Controller
             //     $company->type_of_services()->detach();
             //     $company->type_of_services()->attach($request->type_of_services);
             // }
+
+            $clientId = $client->id;
+            $companyId = $client->company->id;
+            $totalRegNo = $request->total_reg_no;
+            
+            if(isset($request->total_reg_no)) {
+                for ($i = 1; $i <= $totalRegNo; $i++) {
+
+                    $registry = new Registry();
+                    $registry->client_id = $clientId;
+                    $registry->company_id = $companyId;
+
+                    $registry->register_no = $request->{"register_no_$i"};
+                    if ($request->hasFile("reg_no_letter_$i")) { 
+                        $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
+                    }
+                    $registry->save();
+                }           
+            }
+
+            if(isset($request->update_reg_arr)) {
+                $updateRegArr = json_decode($request->update_reg_arr);
+                
+                foreach($updateRegArr as $regId){
+                    $findReg = Registry::find($regId);
+                    if($findReg) {
+                        $regtryID = $findReg->id;
+                        if($request->{"update_register_no_$regtryID"}) {
+                            $findReg->register_no = $request->{"update_register_no_$regtryID"};
+                        }
+                                    
+                        $regNoLetterKey = "update_reg_no_letter_$regtryID";
+                        if ($request->hasFile($regNoLetterKey)) {
+                            $findReg->reg_no_letter = $request->file($regNoLetterKey)->store('companyImages', 'public');
+                            if (!is_null($findReg->reg_no_letter)) {
+                                Storage::disk('public')->delete($findReg->reg_no_letter);
+                            }
+                        }
+                        $findReg->update();
+                    }
+                } 
+            }
 
             if (isset($request->type_of_services)) {
                 $company = $client->company;
@@ -110,7 +153,7 @@ class ClientController extends Controller
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {
@@ -187,7 +230,7 @@ class ClientController extends Controller
     public function getClient() { 
         try {
             $id =  Auth::guard('client-api')->user()->id;
-            $client = Client::with('company.type_of_services', 'addresses')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'addresses')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -211,10 +254,6 @@ class ClientController extends Controller
             }
             /*Creating Company*/
             $company = $request->all();
-            if ($request->hasFile('reg_no_letter')) {
-                $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-                !is_null($client->company->reg_no_letter) && Storage::disk('public')->delete($client->company->reg_no_letter);
-            }
             if ($request->hasFile('personal_director_id')) {
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
                 !is_null($client->company->personal_director_id) && Storage::disk('public')->delete($client->company->personal_director_id);
@@ -232,6 +271,47 @@ class ClientController extends Controller
             //     $company->type_of_services()->detach();
             //     $company->type_of_services()->attach($request->type_of_services);
             // }
+            $clientId = $client->id;
+            $companyId = $client->company->id;
+            $totalRegNo = $request->total_reg_no;
+            
+            if(isset($request->total_reg_no)) {
+                for ($i = 1; $i <= $totalRegNo; $i++) {
+
+                    $registry = new Registry();
+                    $registry->client_id = $clientId;
+                    $registry->company_id = $companyId;
+
+                    $registry->register_no = $request->{"register_no_$i"};
+                    if ($request->hasFile("reg_no_letter_$i")) { 
+                        $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
+                    }
+                    $registry->save();
+                }           
+            }
+
+            if(isset($request->update_reg_arr)) {
+                $updateRegArr = json_decode($request->update_reg_arr);
+                
+                foreach($updateRegArr as $regId){
+                    $findReg = Registry::find($regId);
+                    if($findReg) {
+                        $regtryID = $findReg->id;
+                        if($request->{"update_register_no_$regtryID"}) {
+                            $findReg->register_no = $request->{"update_register_no_$regtryID"};
+                        }
+                                    
+                        $regNoLetterKey = "update_reg_no_letter_$regtryID";
+                        if ($request->hasFile($regNoLetterKey)) {
+                            $findReg->reg_no_letter = $request->file($regNoLetterKey)->store('companyImages', 'public');
+                            if (!is_null($findReg->reg_no_letter)) {
+                                Storage::disk('public')->delete($findReg->reg_no_letter);
+                            }
+                        }
+                        $findReg->update();
+                    }
+                } 
+            }
 
             if (isset($request->type_of_services)) {
                 $company = $client->company;
@@ -253,7 +333,7 @@ class ClientController extends Controller
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {

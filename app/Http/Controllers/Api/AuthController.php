@@ -8,9 +8,8 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterClientRequest;
 use App\Mail\ForgotPasswordMail;
 use App\Mail\VerificationMail;
-use App\Models\Client;
+use App\Models\{User, Client, Registry};
 use Illuminate\Http\Request;
-use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -124,9 +123,8 @@ class AuthController extends Controller
             }
             /*Creating Company*/
             $company = $request->all();
-            if ($request->hasFile('reg_no_letter')) { 
-                $company['reg_no_letter'] = $request->file('reg_no_letter')->store('companyImages', 'public');
-            }
+        
+
             if ($request->hasFile('personal_director_id')) { 
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
             }
@@ -135,6 +133,25 @@ class AuthController extends Controller
             }
             
             $client->company()->create($company);
+
+            $clientId = $client->id;
+            $companyId = $client->company->id;
+            $totalRegNo = $request->total_reg_no;
+            
+            if(isset($request->total_reg_no)) {
+                for ($i = 1; $i <= $totalRegNo; $i++) {
+
+                    $registry = new Registry();
+                    $registry->client_id = $clientId;
+                    $registry->company_id = $companyId;
+
+                    $registry->register_no = $request->{"register_no_$i"};
+                    if ($request->hasFile("reg_no_letter_$i")) { 
+                        $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
+                    }
+                    $registry->save();
+                }           
+            }
 
             if (isset($request->type_of_services)) { 
                 $company = $client->company;

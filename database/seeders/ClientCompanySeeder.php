@@ -33,7 +33,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 1",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "0-1yr",
             "type_of_equipment" => "demo",
@@ -65,7 +65,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 2",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "1-5yr",
             "type_of_equipment" => "demo",
@@ -97,7 +97,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 3",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "0-1yr",
             "type_of_equipment" => "demo",
@@ -129,7 +129,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 4",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "0-1yr",
             "type_of_equipment" => "demo",
@@ -160,7 +160,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 5",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "5-10yr",
             "type_of_equipment" => "demo",
@@ -192,7 +192,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 6",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "5-10yr",
             "type_of_equipment" => "demo",
@@ -225,7 +225,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 7",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "10+ yr",
             "type_of_equipment" => "demo",
@@ -256,7 +256,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 8",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "10+ yr",
             "type_of_equipment" => "demo",
@@ -288,7 +288,7 @@ class ClientCompanySeeder extends Seeder
         Company::create([
             "client_id" => $client->id,
             "company_name" => "Company 9",
-            "register_no" => "7979787",
+            
             "is_vat" => 1,
             "years_of_experience" => "1-5yr",
             "type_of_equipment" => "demo",
