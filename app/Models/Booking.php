@@ -20,7 +20,9 @@ class Booking extends Model
         // 'date',
         // 'time',
         'doctor_comments',
-        'sonographer_comments'
+        'sonographer_comments',
+        'delivery_date',
+        'complete_date'
     ];
 
     public function preferences()
@@ -49,8 +51,13 @@ class Booking extends Model
     //     return $this->hasMany(Reservation::class);
     // }
 
-        public function reservation()
+    public function reservation()
     {
         return $this->hasOne(Reservation::class);
+    }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
     }
 }

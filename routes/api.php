@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Manager\LanguageController;
 use App\Http\Controllers\Api\Manager\EquipmentController;
 use App\Http\Controllers\Api\Manager\SonographerTypeController;
 use App\Http\Controllers\Api\Manager\SonographerTimeController;
+use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -71,6 +72,10 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
     Route::post('client-chart', [ClientController::class, 'clientChart']);
     Route::post('total-earning-chart', [ClientController::class, 'totalEarningChart']);
     Route::post('booking-chart', [ClientController::class, 'bookingChart']);
+
+    // Reviews Api For Admin
+    Route::get('get-reviews', [ReviewController::class, 'get']);
+    Route::delete('delete-review/{id}', [ReviewController::class, 'delete']);
 });
 
 
@@ -125,6 +130,13 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     // Chart API's for Admin
     Route::post('earning-chart', [ClientController::class, 'clientEarningChart']);
     Route::post('booking-chart', [ClientController::class, 'clientBookingChart']);
+
+    // Reviews Api For Sonographer and Doctor
+    Route::post('create-review', [ReviewController::class, 'store']);
+    Route::patch('update-review/{id}', [ReviewController::class, 'update']);
+
+    // If Sonographer and Doctor Direct Book Appointment
+    Route::post('direct-booking', [ClientController::class, 'directBooking']);
 }); 
 
 

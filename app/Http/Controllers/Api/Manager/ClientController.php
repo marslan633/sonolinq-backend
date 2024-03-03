@@ -591,6 +591,7 @@ class ClientController extends Controller
                 'doctor',
                 'sonographer',
                 'preferences',
+                'review'
             ])
             ->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);
@@ -664,6 +665,17 @@ class ClientController extends Controller
             if($request->sonographer_comments) {
                 $booking->sonographer_comments = $request->sonographer_comments;
             }
+
+            $currentDateTime = now()->format('Y-m-d H:i:s');
+
+            if ($request->status == 'Delivered') {
+                $booking->delivery_date = $currentDateTime;
+            }
+
+            if ($request->status == 'Completed') {
+                $booking->complete_date = $currentDateTime;
+            }
+            
             $booking->save();
 
             $bookingObj = Booking::where('id', $booking->id)
@@ -2222,6 +2234,71 @@ if ($payout->status === 'paid') {
                     'data' => [],
                     'status_code' => 200
             ], 200);
+        }
+    }
+
+    public function directBooking(Request $request) {
+        try {
+            if($request->input('token')) {
+                Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+                try {
+                    $charge = Charge::create([
+                        'amount' => $request->input('amount') * 100, // Convert amount to cents
+                        'currency' => 'usd',
+                        'source' => $request->input('token'), // Token received from client
+                        'description' => 'SonoLinq Service Payment',
+                    ]);
+                } catch (\Exception $e) {
+                    // Handle payment error here
+                    return response()->json(['error' => $e->getMessage()], 500);
+                }
+            }
+
+            foreach ($request->reservations as $reservationData) {
+                
+                // Booking will create on the base of reservations
+                $client_id = Auth::guard('client-api')->user()->id;
+
+                $bookingData = $request->all();
+
+                $defaultStatus = 'Pending';
+
+                if ($request->type == 'Doctor/Facility') {
+                    $bookingData['doctor_id'] = $client_id;
+                    $bookingData['sonographer_id'] = $request->sonographer_id;
+                } elseif ($request->type == 'Sonographer') {
+                    $bookingData['doctor_id'] = $request->doctor_id;
+                    $bookingData['sonographer_id'] = $client_id;
+                    $defaultStatus = 'Active';
+                }
+
+                if ($request->amount) {
+                    $bookingData['charge_amount'] = $charge->amount;
+                }
+
+                $booking = Booking::create($bookingData);
+
+                if ($request->type == 'Sonographer') {
+                    $booking->status = $defaultStatus;
+                    $booking->save();
+                }
+
+                // Creating reservation
+                $reservation = Reservation::create([
+                    'type' => $reservationData['type'],
+                    'date' => $reservationData['date'],
+                    'time' => $reservationData['time'],
+                    'amount' => $reservationData['amount'],
+                    'booking_id' => $booking->id,
+                ]);
+
+                $reservation->serviceCategories()->attach($reservationData['service_category_id']);
+                $reservation->services()->attach($reservationData['service_id']);
+            }
+            
+            return sendResponse(true, 200, 'Appointment Book Successfully!', $booking, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
 }
