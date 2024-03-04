@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Manager\LanguageController;
 use App\Http\Controllers\Api\Manager\EquipmentController;
 use App\Http\Controllers\Api\Manager\SonographerTypeController;
 use App\Http\Controllers\Api\Manager\SonographerTimeController;
+use App\Http\Controllers\Api\Manager\TermController;
 use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'equipment' => EquipmentController::class,
         'sonographer-type' => SonographerTypeController::class,
         'sonographer-time' => SonographerTimeController::class,
+        'term' => TermController::class,
     ]);
 
 

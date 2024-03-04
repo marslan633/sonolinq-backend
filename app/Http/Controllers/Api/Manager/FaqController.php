@@ -18,7 +18,7 @@ class FaqController extends Controller
             $faqs = Faq::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'FAQ Fetched Successfully!', $faqs, 200);
         } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
 

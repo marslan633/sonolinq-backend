@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             ClientCompanySeeder::class,
+            FaqSeeder::class,
         ]);
-
         
         \App\Models\User::factory()->create([
             'full_name' => 'Michael Bertrand',
