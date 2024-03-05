@@ -12,9 +12,8 @@ class ReviewController extends Controller
     {
         try {
             $review = Review::create($request->all());
-            $reviewObj = $review->load('booking');
             
-            return sendResponse(true, 200, 'Review Store Successfully!', $reviewObj, 200);
+            return sendResponse(true, 200, 'Review Store Successfully!', $review, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
@@ -25,7 +24,7 @@ class ReviewController extends Controller
             $review = Review::find($id);
             $review->update($request->all());
             
-            return sendResponse(true, 200, 'Review Updated Successfully!', $review->load('booking'), 200);
+            return sendResponse(true, 200, 'Review Updated Successfully!', $review, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         };

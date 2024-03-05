@@ -360,9 +360,9 @@ class ClientController extends Controller
                 ->when($experience, function ($query, $experience) {
                     $query->where('years_of_experience', '>=', $experience);
                 })
-                ->when($register_no, function ($query) {
-                    $query->whereNotNull('register_no');
-                })
+                // ->when($register_no, function ($query) {
+                //     $query->whereNotNull('register_no');
+                // })
                 ->when($language, function ($query) use ($language) {
                     $query->where(function ($subQuery) use ($language) {
                         foreach ($language as $lang) {
@@ -383,6 +383,9 @@ class ClientController extends Controller
                             ->orWhereNull('gender')
                             ->orWhere('gender', '');
                     });
+                })
+                ->when($register_no == 'yes', function ($query) {
+                    $query->whereHas('registries');
                 })
                 ->count();
 
@@ -469,9 +472,9 @@ class ClientController extends Controller
                     ->when($experience, function ($query, $experience) {
                         $query->where('years_of_experience', '>=', $experience);
                     })
-                    ->when($register_no, function ($query) {
-                        $query->whereNotNull('register_no');
-                    })
+                    // ->when($register_no, function ($query) {
+                    //     $query->whereNotNull('register_no');
+                    // })
                     ->when($language, function ($query) use ($language) {
                         $query->where(function ($subQuery) use ($language) {
                             foreach ($language as $lang) {
@@ -492,6 +495,9 @@ class ClientController extends Controller
                                 ->orWhereNull('gender')
                                 ->orWhere('gender', '');
                         });
+                    })
+                    ->when($register_no == 'yes', function ($query) {
+                        $query->whereHas('registries');
                     })
                     ->get();
 
@@ -523,7 +529,8 @@ class ClientController extends Controller
                 },
                 'booking.doctor',
                 'booking.sonographer',
-                'booking.preferences'
+                'booking.preferences',
+                'booking.review'
             ])
             ->where('sonographer_id', $client_id)
             // ->whereIn('status', explode(',', $request->status))
@@ -612,7 +619,8 @@ class ClientController extends Controller
                     },
                     'sonographer',
                     'preferences',
-                    'doctor'
+                    'doctor',
+                    'review'
                 ])
                 ->get();
             return sendResponse(true, 200, 'Booking List Fetched Successfully!', $bookings, 200);

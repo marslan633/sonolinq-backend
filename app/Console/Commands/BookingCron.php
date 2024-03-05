@@ -27,7 +27,8 @@ class BookingCron extends Command
      */
     public function handle()
     {
-        $threeDaysBeforeDelivery = now()->subDays(3);
+        // $threeDaysBeforeDelivery = now()->subDays(3);
+        $threeDaysBeforeDelivery = now()->subMinutes(3);
 
         $bookings = Booking::where('delivery_date', '<', $threeDaysBeforeDelivery)
                         ->whereNull('complete_date')
