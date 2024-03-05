@@ -154,3 +154,4 @@ Route::get('/get-languages', [LanguageController::class, 'getLanguages']);
 Route::get('/get-equipment', [EquipmentController::class, 'getLanguages']);
 Route::get('/get-sonographer-types', [SonographerTypeController::class, 'getSonographerTypes']);
 Route::get('/get-sonographer-time', [SonographerTimeController::class, 'getSonographerTime']);
+Route::get('/get-term', [TermController::class, 'getTerm']);

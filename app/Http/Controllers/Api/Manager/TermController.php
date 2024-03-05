@@ -128,4 +128,14 @@ class TermController extends Controller
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+
+    public function getTerm(Request $request)
+    {
+        try {
+            $items = Term::with('children')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            return sendResponse(true, 200, 'Term Fetched Successfully!', $items, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
 }
