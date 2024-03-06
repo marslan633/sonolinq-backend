@@ -11,9 +11,10 @@ class Review extends Model
 
     protected $fillable = [
         'booking_id',
-        'rating',
-        'feedback',
-        'type'
+        'rating_doctor',
+        'feedback_doctor',
+        'rating_sonographer',
+        'feedback_sonographer'
     ];
 
 
