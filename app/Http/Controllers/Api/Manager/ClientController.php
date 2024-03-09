@@ -440,6 +440,11 @@ class ClientController extends Controller
                 
                 $booking = Booking::create($booking);
 
+                // Generate booking_tracking_id
+                $prefix = 'SNAPP';
+                $randomNumber = mt_rand(1000, 9999);
+                $booking->update(['booking_tracking_id' => $prefix . $randomNumber . $booking->id]);
+                
                 // Creating reservation
                 $reservation = Reservation::create([
                     'type' => $reservationData['type'],
@@ -2285,6 +2290,11 @@ if ($payout->status === 'paid') {
                 }
 
                 $booking = Booking::create($bookingData);
+
+                // Generate booking_tracking_id
+                $prefix = 'SNAPP';
+                $randomNumber = mt_rand(1000, 9999);
+                $booking->update(['booking_tracking_id' => $prefix . $randomNumber . $booking->id]);
 
                 if ($request->type == 'Sonographer') {
                     $booking->status = $defaultStatus;

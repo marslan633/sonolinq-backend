@@ -22,7 +22,8 @@ class Booking extends Model
         'doctor_comments',
         'sonographer_comments',
         'delivery_date',
-        'complete_date'
+        'complete_date',
+        'booking_tracking_id'
     ];
 
     public function preferences()

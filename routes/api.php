@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\Manager\EquipmentController;
 use App\Http\Controllers\Api\Manager\SonographerTypeController;
 use App\Http\Controllers\Api\Manager\SonographerTimeController;
 use App\Http\Controllers\Api\Manager\TermController;
+use App\Http\Controllers\Api\Manager\SupportTicketController;
+use App\Http\Controllers\Api\Manager\TicketNoteController;
 use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +65,8 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'sonographer-type' => SonographerTypeController::class,
         'sonographer-time' => SonographerTimeController::class,
         'term' => TermController::class,
+        'support-ticket' => SupportTicketController::class,
+        'ticket-note' => TicketNoteController::class,
     ]);
 
 
@@ -139,6 +143,19 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
     // If Sonographer and Doctor Direct Book Appointment
     Route::post('direct-booking', [ClientController::class, 'directBooking']);
+
+    Route::post('store-support-ticket', [SupportTicketController::class, 'storeTicket']);
+    Route::get('get-support-ticket', [SupportTicketController::class, 'getTicket']);
+    Route::get('show-support-ticket/{id}', [SupportTicketController::class, 'showTicket']);
+    Route::patch('update-support-ticket/{id}', [SupportTicketController::class, 'updateTicket']);
+    Route::delete('delete-support-ticket/{id}', [SupportTicketController::class, 'deleteTicket']);
+
+
+    Route::post('store-ticket-note', [TicketNoteController::class, 'storeTicketNote']);
+    Route::get('get-ticket-note', [TicketNoteController::class, 'getTicketNote']);
+    Route::get('show-ticket-note/{id}', [TicketNoteController::class, 'showTicketNote']);
+    Route::patch('update-ticket-note/{id}', [TicketNoteController::class, 'updateTicketNote']);
+    Route::delete('delete-ticket-note/{id}', [TicketNoteController::class, 'deleteTicketNote']);
 }); 
 
 
