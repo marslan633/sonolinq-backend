@@ -45,6 +45,11 @@ class SupportTicketController extends Controller
             $supportTicket->comment = $request->comment;
             $supportTicket->status = $request->status;
             $supportTicket->save();
+
+            // Generate ticket_tracking_id
+            $prefix = 'SPT';
+            $randomNumber = mt_rand(1000, 9999);
+            $supportTicket->update(['ticket_tracking_id' => $prefix . $randomNumber . $supportTicket->id]);
  
             return sendResponse(true, 200, 'Support Ticket Created Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
@@ -58,7 +63,7 @@ class SupportTicketController extends Controller
     public function show(string $id)
     {
         try {
-            $supportTicket = SupportTicket::find($id);
+            $supportTicket = SupportTicket::with('ticket_notes')->find($id);
             return sendResponse(true, 200, 'supportTicket Fetched Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -117,6 +122,11 @@ class SupportTicketController extends Controller
             $supportTicket->comment = $request->comment;
             $supportTicket->status = $request->status;
             $supportTicket->save();
+
+            // Generate ticket_tracking_id
+            $prefix = 'SPT';
+            $randomNumber = mt_rand(1000, 9999);
+            $supportTicket->update(['ticket_tracking_id' => $prefix . $randomNumber . $supportTicket->id]);
  
             return sendResponse(true, 200, 'Support Ticket Created Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
@@ -139,7 +149,7 @@ class SupportTicketController extends Controller
     public function showTicket(string $id)
     {
         try {
-            $supportTicket = SupportTicket::find($id);
+            $supportTicket = SupportTicket::with('ticket_notes')->find($id);
             return sendResponse(true, 200, 'supportTicket Fetched Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

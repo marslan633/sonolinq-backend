@@ -17,10 +17,16 @@ class SupportTicket extends Model
         'type',
         'comment',
         'status',
+        'ticket_tracking_id'
     ];
 
     public function booking()
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function ticket_notes()
+    {
+        return $this->hasMany(TicketNote::class, 'ticket_id');
     }
 }

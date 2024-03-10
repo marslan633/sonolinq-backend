@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ClientCompanySeeder::class,
             FaqSeeder::class,
+            SonographerTimeSeeder::class,
+            SonographerTypeSeeder::class,
+            LanguageSeeder::class,
         ]);
     }
 }

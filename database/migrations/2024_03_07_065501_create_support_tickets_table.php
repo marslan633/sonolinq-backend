@@ -17,13 +17,13 @@ return new class extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedBigInteger('client_id')->nullable();
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
-            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('booking_id')->nullable();
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             
             $table->string('title')->nullable();
             $table->string('type')->nullable();
             $table->longText('comment')->nullable();
-            $table->enum('status', ['Pending', 'Active'])->default('Pending');
+            $table->enum('status', ['Pending', 'Active', 'Completed'])->default('Pending');
             $table->timestamps();
         });
     }
