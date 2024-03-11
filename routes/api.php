@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Manager\SonographerTimeController;
 use App\Http\Controllers\Api\Manager\TermController;
 use App\Http\Controllers\Api\Manager\SupportTicketController;
 use App\Http\Controllers\Api\Manager\TicketNoteController;
+use App\Http\Controllers\Api\Manager\EmailTemplateController;
 use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,7 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'term' => TermController::class,
         'support-ticket' => SupportTicketController::class,
         'ticket-note' => TicketNoteController::class,
+        'email-template' => EmailTemplateController::class,
     ]);
 
 
