@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\Manager\EmailTemplateController;
 use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -158,8 +159,22 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('show-ticket-note/{id}', [TicketNoteController::class, 'showTicketNote']);
     Route::patch('update-ticket-note/{id}', [TicketNoteController::class, 'updateTicketNote']);
     Route::delete('delete-ticket-note/{id}', [TicketNoteController::class, 'deleteTicketNote']);
-}); 
 
+    // FCM Working
+    Route::get('/user', function () {
+        // Generate CSRF token
+        $user = Auth::user();
+        $token = $user->createToken('Personal Access Token')->accessToken;
+        $user->device_token =  $token;
+        $user->save();
+
+        // Return the token in the response headers
+        return response()->json(['csrf_token' => $user]);
+    });
+
+    
+}); 
+Route::get('/send-web-notification', [ClientController::class, 'sendNotification']);
 
 /**
  * Public Routes

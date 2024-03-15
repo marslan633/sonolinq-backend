@@ -36,6 +36,7 @@ class Client extends Authenticatable
         'role',
         'gender',
         'non_solicitation_agreement',
+        'device_token'
     ];
 
     /**Setting Password Attribute
