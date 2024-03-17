@@ -14,6 +14,7 @@ use Stripe\Charge;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BookingRequestMail;
+use App\Mail\SendQuoteMail;
 use Stripe\Transfer;
 use Stripe\Payout;
 use Stripe\Customer;
@@ -2364,5 +2365,23 @@ if ($payout->status === 'paid') {
         curl_close($ch);
         // FCM response
         dd($result);
+    }
+
+    public function sendQuote(Request $request) {
+        try {
+            
+            $details = [
+                'name' => $request->name,
+                'phone_number' => $request->phone_number,
+                "contact_platform" => $request->contact_platform,
+                "url" => $request->url
+            ];
+    
+            Mail::to($request->receiver_email)->send(new SendQuoteMail($details));
+            
+            return sendResponse(true, 200, 'Quote Sent Successfully!', [], 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
     }
 }
