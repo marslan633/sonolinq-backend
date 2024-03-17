@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -2415,60 +2415,85 @@ if ($payout->status === 'paid') {
     }
 
 
-    private function assignLevelsForRole($role)
-    {
-        $levelSystems = LevelSystem::all();
-        // return $levelSystems;
-        $clients = Client::where('role', $role)
-                        ->where('is_verified', true)
-                        ->where('status', 'Active')
-                        ->get();
-                        
-        foreach ($clients as $client) {
-            foreach ($levelSystems as $levelSystem) {
-                if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
-                    $client->update(['level_system' => $levelSystem->id]);
-                    // break; // No need to check further levels once assigned
-                }
+private function assignLevelsForRole($role)
+{
+    $levelSystems = LevelSystem::all();
+
+    $clients = Client::where('role', $role)
+                    ->where('is_verified', true)
+                    ->where('status', 'Active')
+                    ->get();
+
+    foreach ($clients as $client) {
+        $assignedLevel = null;
+
+        foreach ($levelSystems as $levelSystem) {
+            if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
+                $assignedLevel = $levelSystem->level;
+                $client->update(['level_system' => $levelSystem->id]);
+                break; // No need to check further levels once assigned
+            }
+        }
+
+        // If Level 1 is assigned, check for Level 2
+        if ($assignedLevel === 'Level 1') {
+            $level2System = LevelSystem::where('level', 'Level 2')->first();
+            if ($this->meetsLevelCriteria($client, $level2System, $role)) {
+                $client->update(['level_system' => $level2System->id]);
             }
         }
     }
+}
 
 private function meetsLevelCriteria($client, $levelSystem, $role)
 {
-    // Check if the client is verified and active
     if (!$client->is_verified || $client->status !== 'Active') {
         return false;
     }
 
-    // Retrieve the field name based on the role
     $field = $role === 'Doctor/Facility' ? 'doctor_id' : 'sonographer_id';
-    
-    // Check if there are no successful bookings for the client
-    if ($this->countSuccessfulBookings($client, $field) === 0) {
-        return true; // No successful bookings, assign Level 0
-    }
-
-    // Check if the client meets the other criteria based on the level system
-    if ($levelSystem->days && $client->created_at->diffInDays(now()) < $levelSystem->days) {
-        return false;
-    }
 
     $successfulBookings = $this->countSuccessfulBookings($client, $field);
+    $rating = $this->calculateRating($client, $field);
 
-    if ($levelSystem->appointment && $successfulBookings < $levelSystem->appointment) {
-        return false;
+    if ($successfulBookings === 0 || ($levelSystem->days !== null && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
+        if ($rating >= $levelSystem->rating && $successfulBookings >= $levelSystem->appointment) {
+            return true;
+        }
     }
-
-    return true;
+    return false;
 }
 
-    private function countSuccessfulBookings($client, $field)
-    {
-        return Booking::where($field, $client->id)
-                      ->where('status', 'Completed')
-                      ->count();
+
+private function calculateRating($client, $field)
+{
+    $reviews = Review::whereHas('booking', function ($query) use ($client, $field) {
+        $query->where($field, $client->id);
+    })->get();
+
+    $totalRating = 0;
+    $totalReviews = $reviews->count();
+
+    foreach ($reviews as $review) {
+        if ($field === 'doctor_id') {
+            $totalRating += $review->rating_sonographer;
+            
+        } else {
+            $totalRating += $review->rating_doctor;
+        }
     }
 
+    // Prevent division by zero
+    $rating = $totalReviews > 0 ? ($totalRating / ($totalReviews * 5)) * 100 : 0;
+
+    return $rating;
+}
+
+private function countSuccessfulBookings($client, $field)
+{
+    return Booking::where($field, $client->id)
+                  ->where('status', 'Completed')
+                  ->count();
+}
     // this is for testing cron job remove it later
 }

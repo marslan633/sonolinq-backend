@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             SonographerTypeSeeder::class,
             LanguageSeeder::class,
             LevelSystemSeeder::class,
+            EmailTemplateSeeder::class,
         ]);
     }
 }

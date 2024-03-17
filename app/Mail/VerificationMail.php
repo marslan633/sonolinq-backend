@@ -13,12 +13,13 @@ class VerificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $details;
     /**
      * Create a new message instance.
      */
-    public function __construct(public $details)
+    public function __construct($details)
     {
-        //
+        $this->details = $details;
     }
 
     /**
@@ -26,8 +27,9 @@ class VerificationMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = $this->details['subject'];
         return new Envelope(
-            subject: 'Verification Mail',
+            subject: $subject,
         );
     }
 

@@ -8,7 +8,7 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterClientRequest;
 use App\Mail\ForgotPasswordMail;
 use App\Mail\VerificationMail;
-use App\Models\{User, Client, Registry};
+use App\Models\{User, Client, Registry, EmailTemplate};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
@@ -71,14 +71,19 @@ class AuthController extends Controller
             $user->password = $randomPassword;
             $user->update();
 
+            $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
+            
             $details = [
+                'subject' => $emailTemplate->subject,
+                'body'=> $emailTemplate->body,
+                'type' => $emailTemplate->type,
                 'full_name' => $user->full_name,
                 'password' => $randomPassword,
                 'url' => $request->url,
             ];
 
             /*Sending Register Mail*/
-            Mail::to($request->email)->send(new ForgotPasswordMail(['details' => $details]));
+            Mail::to($request->email)->send(new ForgotPasswordMail($details));
 
             return sendResponse(true, 200, 'We just sent you a new password on this email', [], 200);
 
@@ -166,12 +171,15 @@ class AuthController extends Controller
 
             /*Sending Client Verification Mail*/
 
+            $emailTemplate = EmailTemplate::where('type', 'verification')->first();
             $details = [
+                'subject' => $emailTemplate->subject,
+                'body'=> $emailTemplate->body,
                 'full_name' => $request->full_name,
                 'url' => $request->url . encrypt_value($request->email),
+                'type' => $emailTemplate->type
             ];
-
-            Mail::to($request->email)->send(new VerificationMail(['details' => $details]));
+            Mail::to($request->email)->send(new VerificationMail($details));
 
             return sendResponse(true, 200, 'Client Registered Successfully!', [], 200);
 
