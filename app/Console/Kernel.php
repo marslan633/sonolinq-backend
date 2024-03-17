@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Console\Commands\AssignClientLevels;
 
 class Kernel extends ConsoleKernel
 {
@@ -19,6 +20,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
         // $schedule->command('booking:cron')->daily();
         $schedule->command('booking:cron')->everyTwoMinutes();
+        $schedule->command(AssignClientLevels::class)->daily();
     }
 
     /**

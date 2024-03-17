@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             SonographerTimeSeeder::class,
             SonographerTypeSeeder::class,
             LanguageSeeder::class,
+            LevelSystemSeeder::class,
         ]);
     }
 }

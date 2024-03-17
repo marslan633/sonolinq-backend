@@ -85,6 +85,10 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
     // Reviews Api For Admin
     Route::get('get-reviews', [ReviewController::class, 'get']);
     Route::delete('delete-review/{id}', [ReviewController::class, 'delete']);
+
+    // Level System Api For Admin
+    Route::get('get-level-system', [ClientController::class, 'getLevelSystem']);
+    Route::patch('update-level-system/{id}', [ClientController::class, 'updateLevelSystem']);
 });
 
 
@@ -190,3 +194,4 @@ Route::get('/get-sonographer-types', [SonographerTypeController::class, 'getSono
 Route::get('/get-sonographer-time', [SonographerTimeController::class, 'getSonographerTime']);
 Route::get('/get-term', [TermController::class, 'getTerm']);
 Route::post('/sendQuote', [ClientController::class, 'sendQuote']);
+Route::get('/run-cron', [ClientController::class, 'runCron']);

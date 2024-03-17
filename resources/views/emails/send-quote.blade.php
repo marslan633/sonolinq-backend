@@ -75,7 +75,7 @@
                       target="_blank"
                     >
                       <img
-                        src="https://email-template-01.netlify.app/img/BidsAuto.png"
+                        src="https://email-template-01.netlify.app/img/logo.png"
                         alt="BidsAuto"
                         style="
                           box-sizing: border-box;
@@ -240,7 +240,7 @@
                                 text-align: left;
                               "
                             >
-                              Auction: <a href="#" target="_blank" >{{ $details['url'] }}</a>
+                              Auction: <a href="{{ $details['url'] }}" target="_blank" >{{ $details['url'] }}</a>
                             </p>
                             <p
                               style="

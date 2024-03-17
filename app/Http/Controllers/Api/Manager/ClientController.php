@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -2384,4 +2384,91 @@ if ($payout->status === 'paid') {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
+
+    public function getLevelSystem() {
+        try {
+            $items = LevelSystem::orderBy('id', 'desc')->get();
+            return sendResponse(true, 200, 'Level System Fetched Successfully!', $items, 200);
+        } catch (\Exception $ex) {
+        return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function updateLevelSystem(Request $request, $id)
+    {
+        try {
+            $item = LevelSystem::find($id);
+            $item->update($request->all());
+            
+            return sendResponse(true, 200, 'Level System Updated Successfully!', $item, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    // this is for testing cron job remove it later
+    public function runCron() {
+        return $this->assignLevelsForRole('Doctor/Facility');
+        $this->assignLevelsForRole('Sonographer');
+
+        // $this->info('Client levels assigned successfully.');
+    }
+
+
+    private function assignLevelsForRole($role)
+    {
+        $levelSystems = LevelSystem::all();
+        // return $levelSystems;
+        $clients = Client::where('role', $role)
+                        ->where('is_verified', true)
+                        ->where('status', 'Active')
+                        ->get();
+                        
+        foreach ($clients as $client) {
+            foreach ($levelSystems as $levelSystem) {
+                if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
+                    $client->update(['level_system' => $levelSystem->id]);
+                    // break; // No need to check further levels once assigned
+                }
+            }
+        }
+    }
+
+private function meetsLevelCriteria($client, $levelSystem, $role)
+{
+    // Check if the client is verified and active
+    if (!$client->is_verified || $client->status !== 'Active') {
+        return false;
+    }
+
+    // Retrieve the field name based on the role
+    $field = $role === 'Doctor/Facility' ? 'doctor_id' : 'sonographer_id';
+    
+    // Check if there are no successful bookings for the client
+    if ($this->countSuccessfulBookings($client, $field) === 0) {
+        return true; // No successful bookings, assign Level 0
+    }
+
+    // Check if the client meets the other criteria based on the level system
+    if ($levelSystem->days && $client->created_at->diffInDays(now()) < $levelSystem->days) {
+        return false;
+    }
+
+    $successfulBookings = $this->countSuccessfulBookings($client, $field);
+
+    if ($levelSystem->appointment && $successfulBookings < $levelSystem->appointment) {
+        return false;
+    }
+
+    return true;
+}
+
+    private function countSuccessfulBookings($client, $field)
+    {
+        return Booking::where($field, $client->id)
+                      ->where('status', 'Completed')
+                      ->count();
+    }
+
+    // this is for testing cron job remove it later
 }
