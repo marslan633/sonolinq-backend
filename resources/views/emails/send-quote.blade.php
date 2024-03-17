@@ -240,8 +240,7 @@
                                 text-align: left;
                               "
                             >
-                              Auction: anchor tag with target blank href={{
-                              $details['url'] }}
+                              Auction: <a href="#" target="_blank" >{{ $details['url'] }}</a>
                             </p>
                             <p
                               style="
