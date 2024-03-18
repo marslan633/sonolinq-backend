@@ -17,7 +17,7 @@ class LevelSystemSeeder extends Seeder
             [
                 'level' => 'Level 0',
                 'badge' => 'New',
-                'appointment' => 'Email + Document verification',
+                'appointment' => 0,
                 'days' => null,
                 'rating' => null,
             ],

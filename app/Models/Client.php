@@ -101,4 +101,8 @@ class Client extends Authenticatable
     {
         return $this->hasMany(Address::class);
     }
+
+    public function level_system() {
+        return $this->belongsTo(LevelSystem::class, 'level_system');
+    }
 }

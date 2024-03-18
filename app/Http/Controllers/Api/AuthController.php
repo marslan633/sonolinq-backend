@@ -8,7 +8,8 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterClientRequest;
 use App\Mail\ForgotPasswordMail;
 use App\Mail\VerificationMail;
-use App\Models\{User, Client, Registry, EmailTemplate};
+use App\Mail\DynamicMail;
+use App\Models\{User, Client, Registry, EmailTemplate, LevelSystem};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +32,11 @@ class AuthController extends Controller
                 if($user->is_verified == false && $type == 'client') return sendResponse(false, 401, 'Your email is not verified. Please check your email.', [], 200);
                 /*Checking Client Status*/
                 if($user->status != 'Active' && $type == 'client') return sendResponse(false, 401, $user->status == 'Pending' ? 'Your account is under review we will contact you with an approval email.' : 'Your account is not active. please contact support.', [], 200);
-
+                
+                // Check if the user type is 'client' and then load the relationship
+                if ($type == 'client') {
+                    $user->load('level_system');
+                }
                 $accessToken =  $user->createToken('Personal Access Token', [$type])->accessToken;
                 return sendResponse(true, 200, 'Login Successfully!', ['user' => $user, 'token' => $accessToken], 200);
             }else{
@@ -71,19 +76,33 @@ class AuthController extends Controller
             $user->password = $randomPassword;
             $user->update();
 
-            $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
+            // $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
             
-            $details = [
-                'subject' => $emailTemplate->subject,
-                'body'=> $emailTemplate->body,
-                'type' => $emailTemplate->type,
-                'full_name' => $user->full_name,
-                'password' => $randomPassword,
-                'url' => $request->url,
-            ];
+            // $details = [
+            //     'subject' => $emailTemplate->subject,
+            //     'body'=> $emailTemplate->body,
+            //     'type' => $emailTemplate->type,
+            //     'full_name' => $user->full_name,
+            //     'password' => $randomPassword,
+            //     'url' => $request->url,
+            // ];
 
-            /*Sending Register Mail*/
-            Mail::to($request->email)->send(new ForgotPasswordMail($details));
+            // /*Sending Register Mail*/
+            // Mail::to($request->email)->send(new ForgotPasswordMail($details));
+
+            $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
+            if($emailTemplate) { 
+                $details = [
+                    'subject' => $emailTemplate->subject,
+                    'body'=> $emailTemplate->body,
+                    'type' => $emailTemplate->type,
+                    'full_name' => $user->full_name,
+                    'password' => $randomPassword,
+                    'url' => $request->url,
+                ];
+                /*Sending Register Mail*/
+                Mail::to($request->email)->send(new DynamicMail($details));
+            }
 
             return sendResponse(true, 200, 'We just sent you a new password on this email', [], 200);
 
@@ -105,7 +124,27 @@ class AuthController extends Controller
             if($user->is_verified == 1) return sendResponse(false, 400, 'Link Expired', [], 200);
 
             $user->is_verified = 1;
+
+            // Assign Level 0 to client
+            $findLevel = LevelSystem::where('level', 'Level 0')->first();
+            if($findLevel) {
+                $user->level_system = $findLevel->id;
+            }
             $user->update();
+
+            // Send Welcome Email
+            $emailTemplate = EmailTemplate::where('type', 'welcome')->first();
+            
+            if($emailTemplate) {
+                $details = [
+                    'subject' => $emailTemplate->subject,
+                    'body'=> $emailTemplate->body,
+                    'type' => $emailTemplate->type,
+                    'full_name' => $user->full_name,
+                    'url' => $request->url,
+                ];
+                Mail::to($user->email)->send(new DynamicMail($details));
+            }
 
             return sendResponse(true, 200, 'Account Verified Successfully!', [], 200);
 
@@ -171,15 +210,28 @@ class AuthController extends Controller
 
             /*Sending Client Verification Mail*/
 
+            // $emailTemplate = EmailTemplate::where('type', 'verification')->first();
+            // $details = [
+            //     'subject' => $emailTemplate->subject,
+            //     'body'=> $emailTemplate->body,
+            //     'full_name' => $request->full_name,
+            //     'url' => $request->url . encrypt_value($request->email),
+            //     'type' => $emailTemplate->type
+            // ];
+            // Mail::to($request->email)->send(new VerificationMail($details));
+
+            // Send Dynamic Verification Email
             $emailTemplate = EmailTemplate::where('type', 'verification')->first();
-            $details = [
-                'subject' => $emailTemplate->subject,
-                'body'=> $emailTemplate->body,
-                'full_name' => $request->full_name,
-                'url' => $request->url . encrypt_value($request->email),
-                'type' => $emailTemplate->type
-            ];
-            Mail::to($request->email)->send(new VerificationMail($details));
+            if($emailTemplate) { 
+                $details = [
+                    'subject' => $emailTemplate->subject,
+                    'body'=> $emailTemplate->body,
+                    'full_name' => $request->full_name,
+                    'url' => $request->url . encrypt_value($request->email),
+                    'type' => $emailTemplate->type
+                ];
+                Mail::to($request->email)->send(new DynamicMail($details));
+            }
 
             return sendResponse(true, 200, 'Client Registered Successfully!', [], 200);
 

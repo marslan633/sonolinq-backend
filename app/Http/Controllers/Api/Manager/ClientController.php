@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +15,7 @@ use DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BookingRequestMail;
 use App\Mail\SendQuoteMail;
+use App\Mail\DynamicMail;
 use Stripe\Transfer;
 use Stripe\Payout;
 use Stripe\Customer;
@@ -64,6 +65,8 @@ class ClientController extends Controller
         try {
             /*Creating Client*/
             $client = Client::find($id);
+            $previousStatus = $client->status;
+            
             if ($request->hasFile('non_solicitation_agreement')) {
                 !is_null($client->non_solicitation_agreement) && Storage::disk('public')->delete($client->non_solicitation_agreement);
             }
@@ -85,6 +88,22 @@ class ClientController extends Controller
             }
             if (isset($request->company_name)) {
                 $client->company->update($company);
+            }
+
+            if ($request->status === 'Active' && $previousStatus === 'Pending' && $client->role == 'Sonographer') {
+                // Send Welcome Email
+                $emailTemplate = EmailTemplate::where('type', 'welcome')->first();
+                
+                if($emailTemplate) {
+                    $details = [
+                        'subject' => $emailTemplate->subject,
+                        'body'=> $emailTemplate->body,
+                        'type' => $emailTemplate->type,
+                        'full_name' => $client->full_name,
+                        'url' => $request->url,
+                    ];
+                    Mail::to($client->email)->send(new DynamicMail($details));
+                }
             }
 
             // if (isset($request->type_of_services)) { 
@@ -2387,7 +2406,7 @@ if ($payout->status === 'paid') {
 
     public function getLevelSystem() {
         try {
-            $items = LevelSystem::orderBy('id', 'desc')->get();
+            $items = LevelSystem::orderBy('id', 'asc')->get();
             return sendResponse(true, 200, 'Level System Fetched Successfully!', $items, 200);
         } catch (\Exception $ex) {
         return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
