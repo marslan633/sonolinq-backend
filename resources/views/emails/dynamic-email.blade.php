@@ -45,6 +45,7 @@
         font-weight: 400;
         text-decoration: none;
         color: #919293;
+        text-align: left;
       }
       h1 {
         font-size: 20px;
@@ -53,6 +54,7 @@
         font-weight: 600;
         text-decoration: none;
         color: #000000;
+        text-align: left;
       }
       .ExternalClass p,
       .ExternalClass span,
