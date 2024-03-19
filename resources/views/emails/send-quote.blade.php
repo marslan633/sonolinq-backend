@@ -240,7 +240,18 @@
                                 text-align: left;
                               "
                             >
-                              Auction: <a href="{{ $details['url'] }}" target="_blank" >{{ $details['url'] }}</a>
+                              {{-- Auction: <a href="{{ $details['url'] }}" target="_blank" >{{ $details['url'] }}</a> --}}
+                              <?php
+                                  $url = $details['url'];
+                                  $containsHttp = Str::contains($url, 'http');
+                              ?>
+
+                              @if ($containsHttp)
+                                  Auction: <a href="{{ $url }}" target="_blank">{{ $url }}</a>
+                              @else
+                                  Auction: <b>{{ $url }}</b>
+                              @endif
+
                             </p>
                             <p
                               style="
