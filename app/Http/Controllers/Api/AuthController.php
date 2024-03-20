@@ -254,8 +254,8 @@ class AuthController extends Controller
             if(!$checkOldPassword) return sendResponse(false, 400, 'Your current password does not match your old password.', [], 200);
             if(!$checkIfOldAndNewPasswordAreSame) return sendResponse(false, 400, 'A new password cannot be the same as the current password.', [], 200);
 
-            $user->passwod = $request->newPassword;
-            $user->updated();
+            $user->password = $request->newPassword;
+            $user->update();
             return sendResponse(true, 200, 'Password updated succcessfully!.', [], 200);
         }catch(\Exception $ex){
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
