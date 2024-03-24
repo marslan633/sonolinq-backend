@@ -14,7 +14,6 @@ use Stripe\Charge;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BookingRequestMail;
-use App\Mail\SendQuoteMail;
 use App\Mail\DynamicMail;
 use Stripe\Transfer;
 use Stripe\Payout;
@@ -529,12 +528,24 @@ class ClientController extends Controller
 
                 $sonographers = $records;
 
+                $emailTemplate = EmailTemplate::where('type', 'booking-request')->first();
                 foreach($sonographers as $sonographer) {
                     $eligible = new EligibleSonographer();
                     $eligible->sonographer_id = $sonographer->client_id;
                     $eligible->booking_id = $booking->id;
                     $eligible->save();
-                    Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
+                    
+                    //Send Booking Request Email to Sonographers
+                    if($emailTemplate) {
+                        $details = [
+                            'subject' => $emailTemplate->subject,
+                            'body'=> $emailTemplate->body,
+                            'type' => $emailTemplate->type,
+                            'full_name' => $sonographer->client['full_name']
+                        ];
+                        Mail::to($sonographer->client['email'])->send(new DynamicMail($details)); 
+                    }                         
+                    // Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
                 }
             }
 
@@ -575,7 +586,7 @@ class ClientController extends Controller
 
     public function acceptBookingRequest($id) {
         try {
-            $sonograhper = EligibleSonographer::find($id);
+            $sonograhper = EligibleSonographer::find($id);            
             // $sonograhper->status = 'Active';
             // $sonograhper->save();
             
@@ -584,6 +595,20 @@ class ClientController extends Controller
             $booking->sonographer_id = $sonograhper->sonographer_id;
             $booking->status = 'Active';
             $booking->save();
+
+            // Send Booking Accepted Email to Doctor
+            $emailTemplate = EmailTemplate::where('type', 'booking-accept')->first();
+            if($emailTemplate) {
+                $doctorDetails = $booking->load('doctor');
+                $details = [
+                    'subject' => $emailTemplate->subject,
+                    'body'=> $emailTemplate->body,
+                    'type' => $emailTemplate->type,
+                    'full_name' => $doctorDetails->doctor['full_name']
+                ];
+
+                Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+            }
 
             $client_id = Auth::guard('client-api')->user()->id;
             EligibleSonographer::where('sonographer_id', '!=', $client_id)->where('booking_id', $booking->id)->delete();
@@ -602,6 +627,20 @@ class ClientController extends Controller
                     $booking = Booking::find($bookingID);
                     $booking->status = 'Rejected';
                     $booking->save();
+
+                    // Send Booking Rejected Email to Doctor
+                    $emailTemplate = EmailTemplate::where('type', 'booking-reject')->first();
+                    if($emailTemplate) {
+                        $doctorDetails = $booking->load('doctor');
+                        $details = [
+                            'subject' => $emailTemplate->subject,
+                            'body'=> $emailTemplate->body,
+                            'type' => $emailTemplate->type,
+                            'full_name' => $doctorDetails->doctor['full_name']
+                        ];
+
+                        Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+                    }
                 }
                 $client_id = Auth::guard('client-api')->user()->id;
                 EligibleSonographer::where('sonographer_id', $client_id)->where('booking_id', $bookingID)->delete();
@@ -711,6 +750,39 @@ class ClientController extends Controller
             }
             
             $booking->save();
+
+            // Send Booking Delivered Email to Doctor
+            if ($request->status == 'Delivered') {  
+                $emailTemplate = EmailTemplate::where('type', 'booking-deliver')->first();
+                if($emailTemplate) {
+                    $doctorDetails = $booking->load('doctor');
+                    $details = [
+                        'subject' => $emailTemplate->subject,
+                        'body'=> $emailTemplate->body,
+                        'type' => $emailTemplate->type,
+                        'full_name' => $doctorDetails->doctor['full_name']
+                    ];
+
+                    Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+                }
+            }
+
+            // Send Booking Completed Email to Sonographer
+            if ($request->status == 'Completed') {
+                
+                $emailTemplate = EmailTemplate::where('type', 'booking-complete')->first();
+                if($emailTemplate) {
+                    $sonographerDetails = $booking->load('sonographer');
+                    $details = [
+                        'subject' => $emailTemplate->subject,
+                        'body'=> $emailTemplate->body,
+                        'type' => $emailTemplate->type,
+                        'full_name' => $sonographerDetails->sonographer['full_name']
+                    ];
+
+                    Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details)); 
+                }
+            }
 
             $bookingObj = Booking::where('id', $booking->id)
                 ->with([
@@ -2346,7 +2418,9 @@ if ($payout->status === 'paid') {
         $url = 'https://fcm.googleapis.com/fcm/send';
 
         // $FcmToken = Client::whereNotNull('device_token')->pluck('device_token')->all();
-        $FcmToken = $request->device_token;
+        $FcmToken = [
+            'd9KpvQh1gTRRAS3ygstzJX:APA91bE6D3HaY3VNrFGByCyfpI3I_xxXh_UfnXn0xK45TFQjrvJDW4PXqrotvtVWM9OhjP0Z_aaDW3wA5q-5XduPFUTK0fmjso8Kf8IBlF4F7Q1xjTfEHs7W_c9WSKzs-Y3RPEQEv99f'
+        ];
         
         $serverKey = 'AAAAuwxMT4o:APA91bFRThKc_D2oQK_EtGqeQRzOZ9bTTIxUYIQfdlJYOfnG41ostYsBcoFFk1bGiKWVMA-aAwGwo2aCGtOP2kmYj1cQxyIyFYJO9FSZ0gvzZWOuH8W5SmlJKHy7-KMBbI5OQlxSNJj4'; // ADD SERVER KEY HERE PROVIDED BY FCM
     
@@ -2383,25 +2457,7 @@ if ($payout->status === 'paid') {
         // Close connection
         curl_close($ch);
         // FCM response
-        dd($result);
-    }
-
-    public function sendQuote(Request $request) {
-        try {
-            
-            $details = [
-                'name' => $request->name,
-                'phone_number' => $request->phone_number,
-                "contact_platform" => $request->contact_platform,
-                "url" => $request->url
-            ];
-    
-            Mail::to($request->receiver_email)->send(new SendQuoteMail($details));
-            
-            return sendResponse(true, 200, 'Quote Sent Successfully!', [], 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
-        }
+        return $result;
     }
 
     public function getLevelSystem() {
@@ -2445,15 +2501,16 @@ private function assignLevelsForRole($role)
 
     foreach ($clients as $client) {
         $assignedLevel = null;
+        $prevLevel = $client->load('level')->level['level'];
 
         foreach ($levelSystems as $levelSystem) {
             if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
                 $assignedLevel = $levelSystem->level;
-                $client->update(['level_system' => $levelSystem->id]);
+                $client->update(['level_system' => $levelSystem->id]);         
                 break; // No need to check further levels once assigned
             }
         }
-
+        
         // If Level 1 is assigned, check for Level 2
         if ($assignedLevel === 'Level 1') {
             $level2System = LevelSystem::where('level', 'Level 2')->first();
@@ -2461,6 +2518,48 @@ private function assignLevelsForRole($role)
                 $client->update(['level_system' => $level2System->id]);
             }
         }
+
+        // If no level system matched, apply Level 0
+        if ($assignedLevel === null) {
+            $level0System = LevelSystem::where('level', 'Level 0')->first();
+            $client->update(['level_system' => $level0System->id]);
+        }
+
+        
+                // After all level systems have been checked and level assigned, compare previous and new levels
+                // $newLevel = $client->load('level')->level['level'];
+                // // Check if level upgraded or downgraded
+                // if ($newLevel > $prevLevel) {
+                //     // Send email for level upgrade
+                //     $upgradeEmail = EmailTemplate::where('type', 'level-upgrade')->first();
+
+                //     $emailSubject = str_replace('{{level}}', $newLevel, $upgradeEmail->subject);
+                //     if($upgradeEmail){
+                //         $details = [
+                //             'subject' => $emailSubject,
+                //             'body'=> $upgradeEmail->body,
+                //             'type' => $upgradeEmail->type,
+                //             'full_name' => $client->full_name,
+                //             'level' => $newLevel
+                //         ];
+                //         Mail::to($client->email)->send(new DynamicMail($details));
+                //     }
+                // } elseif ($newLevel < $prevLevel) {
+                //     $downgradeEmail = EmailTemplate::where('type', 'level-downgrade')->first();
+
+                //     $emailSubject = str_replace('{{level}}', $newLevel, $downgradeEmail->subject);
+                //     if($downgradeEmail){
+                //         $details = [
+                //             'subject' => $emailSubject,
+                //             'body'=> $downgradeEmail->body,
+                //             'type' => $downgradeEmail->type,
+                //             'full_name' => $client->full_name,
+                //             'latest_level' => $newLevel,
+                //             'previous_level' => $prevLevel
+                //         ];
+                //         Mail::to($client->email)->send(new DynamicMail($details));
+                //     }
+                // }
     }
 }
 
@@ -2472,10 +2571,10 @@ private function meetsLevelCriteria($client, $levelSystem, $role)
 
     $field = $role === 'Doctor/Facility' ? 'doctor_id' : 'sonographer_id';
 
-    $successfulBookings = $this->countSuccessfulBookings($client, $field);
-    $rating = $this->calculateRating($client, $field);
+    $successfulBookings = $this->countSuccessfulBookings($client, $field); //7
+    $rating = $this->calculateRating($client, $field); //80.0
 
-    if ($successfulBookings === 0 || ($levelSystem->days !== null && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
+    if ($successfulBookings === 0 || ($levelSystem->days != 0 && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
         if ($rating >= $levelSystem->rating && $successfulBookings >= $levelSystem->appointment) {
             return true;
         }
@@ -2504,7 +2603,6 @@ private function calculateRating($client, $field)
 
     // Prevent division by zero
     $rating = $totalReviews > 0 ? ($totalRating / ($totalReviews * 5)) * 100 : 0;
-
     return $rating;
 }
 

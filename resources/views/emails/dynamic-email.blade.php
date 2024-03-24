@@ -209,6 +209,12 @@
                     $data = str_replace(['{{username}}', '{{url}}'], [$details['full_name'], $details['url']], $details['body']);
                 } elseif ($details['type'] == 'forgot-password') {
                     $data = str_replace(['{{username}}', '{{url}}', '{{password}}'], [$details['full_name'], $details['url'], $details['password']], $details['body']);
+                } elseif ($details['type'] == 'booking-request' || $details['type'] == 'booking-accept' || $details['type'] == 'booking-deliver' || $details['type'] == 'booking-complete' || $details['type'] == 'booking-reject' ) {
+                  $data = str_replace(['{{username}}'], [$details['full_name']], $details['body']);
+                } elseif ($details['type'] == 'level-upgrade') {
+                  $data = str_replace(['{{username}}', '{{level}}'], [$details['full_name'], $details['level']], $details['body']);
+                } elseif ($details['type'] == 'level-downgrade') {
+                  $data = str_replace(['{{username}}', '{{previous_level}}', '{{latest_level}}'], [$details['full_name'], $details['previous_level'], $details['latest_level']], $details['body']);
                 }
             @endphp
 

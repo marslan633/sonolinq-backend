@@ -7,6 +7,9 @@ use App\Models\Client;
 use App\Models\Booking;
 use App\Models\LevelSystem;
 use App\Models\Review;
+use App\Models\EmailTemplate;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DynamicMail;
 use Carbon\Carbon;
 
 class AssignClientLevels extends Command
@@ -48,6 +51,9 @@ class AssignClientLevels extends Command
         foreach ($clients as $client) {
             $assignedLevel = null;
 
+            // Check Previous Level
+            $prevLevel = $client->load('level')->level['level'];
+            
             foreach ($levelSystems as $levelSystem) {
                 if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
                     $assignedLevel = $levelSystem->level;
@@ -61,6 +67,48 @@ class AssignClientLevels extends Command
                 $level2System = LevelSystem::where('level', 'Level 2')->first();
                 if ($this->meetsLevelCriteria($client, $level2System, $role)) {
                     $client->update(['level_system' => $level2System->id]);
+                }
+            }
+
+            // If no level system matched, apply Level 0
+            if ($assignedLevel === null) {
+                $level0System = LevelSystem::where('level', 'Level 0')->first();
+                $client->update(['level_system' => $level0System->id]);
+            }
+
+            // After all level systems have been checked and level assigned, compare previous and new levels
+            // Check Latest Level
+            $newLevel = $client->load('level')->level['level'];
+            // Check if level upgraded or downgraded
+            if ($newLevel > $prevLevel) {
+                // Send email for level upgrade
+                $upgradeEmail = EmailTemplate::where('type', 'level-upgrade')->first();
+
+                $emailSubject = str_replace('{{level}}', $newLevel, $upgradeEmail->subject);
+                if($upgradeEmail){
+                    $details = [
+                        'subject' => $emailSubject,
+                        'body'=> $upgradeEmail->body,
+                        'type' => $upgradeEmail->type,
+                        'full_name' => $client->full_name,
+                        'level' => $newLevel
+                    ];
+                     Mail::to($client->email)->send(new DynamicMail($details));
+                }
+            } elseif ($newLevel < $prevLevel) {
+                $downgradeEmail = EmailTemplate::where('type', 'level-downgrade')->first();
+
+                $emailSubject = str_replace('{{level}}', $newLevel, $downgradeEmail->subject);
+                if($downgradeEmail){
+                    $details = [
+                        'subject' => $emailSubject,
+                        'body'=> $downgradeEmail->body,
+                        'type' => $downgradeEmail->type,
+                        'full_name' => $client->full_name,
+                        'latest_level' => $newLevel,
+                        'previous_level' => $prevLevel
+                    ];
+                    Mail::to($client->email)->send(new DynamicMail($details));
                 }
             }
         }
@@ -77,7 +125,7 @@ class AssignClientLevels extends Command
         $successfulBookings = $this->countSuccessfulBookings($client, $field);
         $rating = $this->calculateRating($client, $field);
 
-        if ($successfulBookings === 0 || ($levelSystem->days !== null && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
+        if ($successfulBookings === 0 || ($levelSystem->days != 0 && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
             if ($rating >= $levelSystem->rating && $successfulBookings >= $levelSystem->appointment) {
                 return true;
             }

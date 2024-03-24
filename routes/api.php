@@ -178,7 +178,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
 
     
 }); 
-Route::get('/send-web-notification', [ClientController::class, 'sendNotification']);
+Route::post('/send-web-notification', [ClientController::class, 'sendNotification']);
 
 /**
  * Public Routes
@@ -193,5 +193,4 @@ Route::get('/get-equipment', [EquipmentController::class, 'getLanguages']);
 Route::get('/get-sonographer-types', [SonographerTypeController::class, 'getSonographerTypes']);
 Route::get('/get-sonographer-time', [SonographerTimeController::class, 'getSonographerTime']);
 Route::get('/get-term', [TermController::class, 'getTerm']);
-Route::post('/sendQuote', [ClientController::class, 'sendQuote']);
 Route::get('/run-cron', [ClientController::class, 'runCron']);

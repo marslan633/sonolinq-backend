@@ -105,4 +105,8 @@ class Client extends Authenticatable
     public function level_system() {
         return $this->belongsTo(LevelSystem::class, 'level_system');
     }
+
+    public function level() {
+        return $this->belongsTo(LevelSystem::class, 'level_system');
+    }
 }

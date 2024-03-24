@@ -18,8 +18,8 @@ class LevelSystemSeeder extends Seeder
                 'level' => 'Level 0',
                 'badge' => 'New',
                 'appointment' => 0,
-                'days' => null,
-                'rating' => null,
+                'days' => 0,
+                'rating' => 0,
             ],
             [
                 'level' => 'Level 1',

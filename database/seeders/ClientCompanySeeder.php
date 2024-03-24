@@ -28,6 +28,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -60,6 +61,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -92,6 +94,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -124,6 +127,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -155,6 +159,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Female",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -187,6 +192,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Female",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -220,6 +226,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -251,6 +258,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
@@ -283,6 +291,7 @@ class ClientCompanySeeder extends Seeder
             "gender" => "Male",
             "created_at" => "2023-12-26 09:09:04",
             "updated_at" => "2023-12-26 09:09:04",
+            "level_system" => 0,
         ]);
 
         Company::create([
