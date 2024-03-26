@@ -879,20 +879,21 @@ class ClientController extends Controller
     public function doctorCancelBooking($id) {
         try {
             $booking = Booking::with('reservation')->where('id', $id)->first();
+            $doctor = Client::where('id', $booking->doctor_id)->first();
 
             // Check if booking status is "Pending"
             if ($booking->status === 'Pending') {
                 $booking->status = 'Cancelled';
                 $booking->update();
-                
+
+                $doctor->virtual_balance =  $booking->reservation['amount'];
+                $doctor->update();
                 EligibleSonographer::where('booking_id', $booking->id)->delete();
                 return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
             }
 
-            $doctor = Client::where('id', $booking->doctor_id)->first();
-
             $virtualBalance = $doctor->virtual_balance;
-            $bookingAmount = $booking->charge_amount;
+            $bookingAmount =  $booking->reservation['amount'];
             
             $shiftDate = new DateTime($booking->reservation['date']);
             // Calculate the number of business days between the current date and the shift date
@@ -901,7 +902,7 @@ class ClientController extends Controller
 
             // Determine the cancellation fee based on the business day count
             if ($businessDayCount < 3) {
-                $cancellationFee = $bookingAmount - 25000; // Late cancellation fee
+                $cancellationFee = $bookingAmount - 250; // Late cancellation fee
                 $booking->cancellation_fee = $cancellationFee;
                 $booking->status = 'Cancelled';
                 $virtualBalance += $cancellationFee;
@@ -911,7 +912,7 @@ class ClientController extends Controller
                 $doctor->update();
             }
 
-            EligibleSonographer::where('booking_id', $booking->id)->delete();
+            // EligibleSonographer::where('booking_id', $booking->id)->delete();
 
             return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
         } catch (\Exception $ex) {
