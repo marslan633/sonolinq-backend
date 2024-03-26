@@ -27,12 +27,12 @@ class DatabaseSeeder extends Seeder
         ]);
         
         $this->call([
+            LevelSystemSeeder::class,
             ClientCompanySeeder::class,
             FaqSeeder::class,
             SonographerTimeSeeder::class,
             SonographerTypeSeeder::class,
             LanguageSeeder::class,
-            LevelSystemSeeder::class,
             EmailTemplateSeeder::class,
         ]);
     }
