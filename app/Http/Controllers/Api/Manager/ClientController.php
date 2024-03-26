@@ -628,20 +628,6 @@ class ClientController extends Controller
                     $booking = Booking::find($bookingID);
                     $booking->status = 'Rejected';
                     $booking->save();
-
-                    // Send Booking Rejected Email to Doctor
-                    $emailTemplate = EmailTemplate::where('type', 'booking-reject')->first();
-                    if($emailTemplate) {
-                        $doctorDetails = $booking->load('doctor');
-                        $details = [
-                            'subject' => $emailTemplate->subject,
-                            'body'=> $emailTemplate->body,
-                            'type' => $emailTemplate->type,
-                            'full_name' => $doctorDetails->doctor['full_name']
-                        ];
-
-                        Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
-                    }
                 }
                 $client_id = Auth::guard('client-api')->user()->id;
                 EligibleSonographer::where('sonographer_id', $client_id)->where('booking_id', $bookingID)->delete();
@@ -910,6 +896,21 @@ class ClientController extends Controller
                 
                 $doctor->virtual_balance = $virtualBalance;
                 $doctor->update();
+
+                // Send Booking Cancelation Email to Sonographer
+                $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
+
+                if($emailTemplate) {
+                    $sonographerDetails = $booking->load('sonographer');
+                    $details = [
+                        'subject' => $emailTemplate->subject,
+                        'body'=> $emailTemplate->body,
+                        'type' => $emailTemplate->type,
+                        'full_name' => $sonographerDetails->doctor['full_name']
+                    ];
+
+                    Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
+                }
             }
 
             // EligibleSonographer::where('booking_id', $booking->id)->delete();
@@ -955,6 +956,10 @@ class ClientController extends Controller
                 if ($businessDayCount >= 3 && $countCancelBookings < 3) {
                     $booking->status = 'Cancelled';
                     $booking->update();
+
+                    // Send Booking Cancelation Email to Doctor
+                    sendCancellationEmail($booking);
+
                     return sendResponse(true, 200, 'Booking Cancelled Successfully!', $booking, 200);
                 } elseif ($businessDayCount >= 3 && $countCancelBookings >= 3 && $countCancelBookings < 6) {
                     // If cancellation exceeds the limit and account is not yet suspended
@@ -963,6 +968,10 @@ class ClientController extends Controller
                     $sonographer->status = 'Suspended';
                     $sonographer->suspension_date = now()->toDateString();
                     $sonographer->update();
+
+                    // Send Booking Cancelation Email to Doctor
+                    sendCancellationEmail($booking);
+                    
                     return sendResponse(false, 200, 'Account Suspended! You have exceeded the cancellation limit.', $booking, 200);
                 } elseif ($countCancelBookings >= 6 || ($countCancelBookings >= 3 && $businessDayCount < 3)) {
                     // If cancellation exceeds the limit and account is already suspended or cancellation is within 72 hours notice
@@ -975,6 +984,9 @@ class ClientController extends Controller
                             $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
                             $sonographer->update();
 
+                            // Send Booking Cancelation Email to Doctor
+                            sendCancellationEmail($booking);
+
                             return sendResponse(false, 200, 'Your account has been suspended again for a year!', $booking, 200);
                         } elseif ($sonographer->suspension_end_date === null) {
                             // If the account has never been suspended before
@@ -983,6 +995,9 @@ class ClientController extends Controller
                             $sonographer->suspension_date = now()->toDateString();
                             $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
                             $sonographer->update();
+
+                            // Send Booking Cancelation Email to Doctor
+                            sendCancellationEmail($booking);
 
                             return sendResponse(false, 200, 'Your account has been suspended for a year!', $booking, 200);
                         } else {
@@ -993,6 +1008,9 @@ class ClientController extends Controller
                         $sonographer->status = 'Suspended';
                         $sonographer->suspension_date = now()->toDateString();
                         $sonographer->update();
+
+                        // Send Booking Cancelation Email to Doctor
+                        sendCancellationEmail($booking);
                     }
                     return sendResponse(false, 200, 'Account is suspended or cancellation not permitted within 72 hours notice.', $booking, 200);
                 } else {
@@ -1001,13 +1019,33 @@ class ClientController extends Controller
                     $sonographer->suspension_date = now()->toDateString();
                     $sonographer->update();
 
-                    return sendResponse(false, 200, 'Cancellation not permitted within 72 hours notice.', $booking, 200);
+                    // Send Booking Cancelation Email to Doctor
+                    sendCancellationEmail($booking);
+
+                    return sendResponse(false, 200, 'Account is suspended immediately because cancellation not permitted within 72 hours notice.', $booking, 200);
                 }
             } else {
                 return sendResponse(false, 200, 'Booking is not active and cannot be cancelled.', $booking, 200);
             }
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    // Extracted function to send cancellation email
+    private function sendCancellationEmail($booking) {
+        $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
+
+        if($emailTemplate) {
+            $doctorDetails = $booking->load('doctor');
+            $details = [
+                'subject' => $emailTemplate->subject,
+                'body'=> $emailTemplate->body,
+                'type' => $emailTemplate->type,
+                'full_name' => $doctorDetails->doctor['full_name']
+            ];
+
+            Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
         }
     }
 

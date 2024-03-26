@@ -67,7 +67,7 @@ class EmailTemplateSeeder extends Seeder
                 "user_id" => 2,
                 "subject" => "Appointment Cancellation Email",
                 "body" => "<h1>Hello, {{username}}!</h1><p>We regret to inform you that your appointment request with SonoLinq has been rejected/cancelled.</p><p>This decision was made due to [reason for rejection/cancellation, e.g., scheduling conflicts, unforeseen circumstances, etc.]. We apologize for any inconvenience this may cause.</p><p>If you have any questions or concerns, please feel free to contact us. Thank you for your understanding.</p><p>Best regards,</p><p>SonoLinq Manager</p>",
-                "type" => "booking-reject",
+                "type" => "booking-cancel",
                 "receiver" => "doctor",
             ],
             [
