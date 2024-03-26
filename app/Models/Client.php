@@ -37,7 +37,10 @@ class Client extends Authenticatable
         'gender',
         'non_solicitation_agreement',
         'device_token',
-        'level_system'
+        'level_system',
+        'virtual_balance',
+        'suspension_date',
+        'suspension_end_date'
     ];
 
     /**Setting Password Attribute

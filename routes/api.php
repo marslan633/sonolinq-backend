@@ -128,6 +128,8 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('/get-eligible-sonographer', [ClientController::class, 'getEligibleSonographers']);
     Route::get('/accept-booking-request/{id}', [ClientController::class, 'acceptBookingRequest']);
     Route::get('/reject-booking-request/{id}', [ClientController::class, 'rejectBookingRequest']);
+    Route::get('/doctor-cancel-booking/{id}', [ClientController::class, 'doctorCancelBooking']);
+    Route::get('/sonographer-cancel-booking/{id}', [ClientController::class, 'sonographerCancelBooking']);
 
     Route::get('/get-doctor-bookings', [ClientController::class, 'getDoctorBookings']);
     

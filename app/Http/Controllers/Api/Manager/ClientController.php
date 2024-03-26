@@ -22,6 +22,7 @@ use Stripe\Token;
 use Stripe\BankAccount;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use DateTime;
 
 class ClientController extends Controller
 {
@@ -372,7 +373,7 @@ class ClientController extends Controller
             
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
-                    $query->where('role', 'Sonographer');
+                    $query->where('role', 'Sonographer')->where('status', 'active');
                 })
                 ->when($level, function ($query, $level) {
                     $query->where('level', $level);
@@ -489,7 +490,7 @@ class ClientController extends Controller
                 
                 $records = Company::with('client')
                     ->whereHas('client', function ($query) {
-                        $query->where('role', 'Sonographer');
+                        $query->where('role', 'Sonographer')->where('status', 'active');
                     })
                     ->when($level, function ($query, $level) {
                         $query->where('level', $level);
@@ -868,6 +869,141 @@ class ClientController extends Controller
                 return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
             } else {
                 return sendResponse(false, 200, 'Package not found for sonographer!', [], 200);
+            }
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    // When Doctor Cancel Booking
+    public function doctorCancelBooking($id) {
+        try {
+            $booking = Booking::with('reservation')->where('id', $id)->first();
+
+            // Check if booking status is "Pending"
+            if ($booking->status === 'Pending') {
+                $booking->status = 'Cancelled';
+                $booking->update();
+                
+                EligibleSonographer::where('booking_id', $booking->id)->delete();
+                return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
+            }
+
+            $doctor = Client::where('id', $booking->doctor_id)->first();
+
+            $virtualBalance = $doctor->virtual_balance;
+            $bookingAmount = $booking->charge_amount;
+            
+            $shiftDate = new DateTime($booking->reservation['date']);
+            // Calculate the number of business days between the current date and the shift date
+            $currentDate = new DateTime();
+            $businessDayCount = $this->countBusinessDays($currentDate, $shiftDate);
+
+            // Determine the cancellation fee based on the business day count
+            if ($businessDayCount < 3) {
+                $cancellationFee = $bookingAmount - 25000; // Late cancellation fee
+                $booking->cancellation_fee = $cancellationFee;
+                $booking->status = 'Cancelled';
+                $virtualBalance += $cancellationFee;
+                $booking->update();
+                
+                $doctor->virtual_balance = $virtualBalance;
+                $doctor->update();
+            }
+
+            EligibleSonographer::where('booking_id', $booking->id)->delete();
+
+            return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    private function countBusinessDays($startDate, $endDate)
+    {
+        $count = 0;
+        $currentDate = clone $startDate;
+
+        while ($currentDate <= $endDate) {
+            if ($currentDate->format("N") < 6) { // Monday to Friday are business days (N: ISO-8601 numeric representation of the day of the week)
+                $count++;
+            }
+            $currentDate->modify('+1 day');
+        }
+
+        return $count;
+    }
+
+    // When Sonographer Cancel Booking
+    public function sonographerCancelBooking($id) {
+        try {
+            $booking = Booking::with('reservation')->where('id', $id)->first();
+            $sonographer = Client::where('id', $booking->sonographer_id)->first();
+
+            $countCancelBookings = Booking::where('sonographer_id', $booking->sonographer_id)
+                                        ->where('status', 'Cancelled')
+                                        ->count();
+
+            if ($booking->status === 'Active') {
+                $shiftDate = new DateTime($booking->reservation['date']);
+                $currentDate = new DateTime();
+
+                $businessDayCount = $this->countBusinessDays($currentDate, $shiftDate);
+                
+                // If cancellation is within the allowed limit of 3 individual shifts
+                if ($businessDayCount >= 3 && $countCancelBookings < 3) {
+                    $booking->status = 'Cancelled';
+                    $booking->update();
+                    return sendResponse(true, 200, 'Booking Cancelled Successfully!', $booking, 200);
+                } elseif ($businessDayCount >= 3 && $countCancelBookings >= 3 && $countCancelBookings < 6) {
+                    // If cancellation exceeds the limit and account is not yet suspended
+                    $booking->status = 'Cancelled';
+                    $booking->update();
+                    $sonographer->status = 'Suspended';
+                    $sonographer->suspension_date = now()->toDateString();
+                    $sonographer->update();
+                    return sendResponse(false, 200, 'Account Suspended! You have exceeded the cancellation limit.', $booking, 200);
+                } elseif ($countCancelBookings >= 6 || ($countCancelBookings >= 3 && $businessDayCount < 3)) {
+                    // If cancellation exceeds the limit and account is already suspended or cancellation is within 72 hours notice
+                    if ($sonographer->suspension_date !== null) {
+                        $suspensionEndDate = Carbon::parse($sonographer->suspension_date)->addYear();
+                        if ($sonographer->suspension_end_date !== null && $currentDate >= Carbon::parse($sonographer->suspension_end_date)) {
+                            // If one year has passed since the last suspension, suspend for another year from the date of the 7th canceled shift
+                            $suspensionEndDate = Carbon::parse($currentDate)->addYear();
+                            $sonographer->suspension_date = now()->toDateString();
+                            $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
+                            $sonographer->update();
+
+                            return sendResponse(false, 200, 'Your account has been suspended again for a year!', $booking, 200);
+                        } elseif ($sonographer->suspension_end_date === null) {
+                            // If the account has never been suspended before
+                            $suspensionEndDate = Carbon::parse($currentDate)->addYear();
+                            $sonographer->status = 'Suspended';
+                            $sonographer->suspension_date = now()->toDateString();
+                            $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
+                            $sonographer->update();
+
+                            return sendResponse(false, 200, 'Your account has been suspended for a year!', $booking, 200);
+                        } else {
+                            return sendResponse(false, 200, 'Account is already suspended for a year!', $booking, 200);
+                        }
+                    } else {
+                        // If the account has never been suspended before
+                        $sonographer->status = 'Suspended';
+                        $sonographer->suspension_date = now()->toDateString();
+                        $sonographer->update();
+                    }
+                    return sendResponse(false, 200, 'Account is suspended or cancellation not permitted within 72 hours notice.', $booking, 200);
+                } else {
+                    // If cancellation is within 72 hours notice
+                    $sonographer->status = 'Suspended';
+                    $sonographer->suspension_date = now()->toDateString();
+                    $sonographer->update();
+
+                    return sendResponse(false, 200, 'Cancellation not permitted within 72 hours notice.', $booking, 200);
+                }
+            } else {
+                return sendResponse(false, 200, 'Booking is not active and cannot be cancelled.', $booking, 200);
             }
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

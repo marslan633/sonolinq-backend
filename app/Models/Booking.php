@@ -23,7 +23,8 @@ class Booking extends Model
         'sonographer_comments',
         'delivery_date',
         'complete_date',
-        'booking_tracking_id'
+        'booking_tracking_id',
+        'cancellation_fee'
     ];
 
     public function preferences()

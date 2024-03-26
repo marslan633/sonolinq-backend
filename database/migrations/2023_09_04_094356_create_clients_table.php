@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('is_verified')->default(false);
             $table->boolean('terms')->default(false);
-            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected'])->default('Pending');
+            $table->enum('status', ['Pending', 'Active', 'Deactive', 'Rejected', 'Suspended'])->default('Pending');
             // $table->enum('role', ['Client'])->default('Client');
             $table->enum('role', ['Doctor/Facility', 'Sonographer'])->default('Doctor/Facility');
             $table->softDeletes();
