@@ -30,8 +30,20 @@ class AuthController extends Controller
                 if(!$user->status && $type == 'user') return sendResponse(false, 401, 'Your account is not active. please contact support.', [], 200);
                 /*Checking Client Email Verificatoin*/
                 if($user->is_verified == false && $type == 'client') return sendResponse(false, 401, 'Your email is not verified. Please check your email.', [], 200);
+                
                 /*Checking Client Status*/
-                if($user->status != 'Active' && $type == 'client') return sendResponse(false, 401, $user->status == 'Pending' ? 'Your account is under review we will contact you with an approval email.' : 'Your account is not active. please contact support.', [], 200);
+                if($user->status != 'Active' && $type == 'client') {
+                    if ($user->status == 'Suspended') {
+                        // Check if the user type is 'client' and then load the relationship
+                        if ($type == 'client') {
+                            $user->load('level_system');
+                        }
+                        $accessToken =  $user->createToken('Personal Access Token', [$type])->accessToken;
+                        return sendResponse(true, 200, 'Login Successfully!', ['user' => $user, 'token' => $accessToken], 200);                                         
+                    } else {
+                        return sendResponse(false, 401, $user->status == 'Pending' ? 'Your account is under review we will contact you with an approval email.' : 'Your account is not active. please contact support.', [], 200);
+                    }
+                }
                 
                 // Check if the user type is 'client' and then load the relationship
                 if ($type == 'client') {
