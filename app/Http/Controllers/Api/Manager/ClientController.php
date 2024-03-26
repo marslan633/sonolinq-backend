@@ -872,8 +872,12 @@ class ClientController extends Controller
                 $booking->status = 'Cancelled';
                 $booking->update();
 
-                $doctor->virtual_balance =  $booking->reservation['amount'];
+                $calBalance = $doctor->virtual_balance + $booking->reservation['amount'];
+                $doctor->virtual_balance =  $calBalance;
                 $doctor->update();
+
+                $booking['virtual_balance'] = $doctor->virtual_balance;
+                
                 EligibleSonographer::where('booking_id', $booking->id)->delete();
                 return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
             }
@@ -896,6 +900,8 @@ class ClientController extends Controller
                 
                 $doctor->virtual_balance = $virtualBalance;
                 $doctor->update();
+
+                $booking['virtual_balance'] = $doctor->virtual_balance;
 
                 // Send Booking Cancelation Email to Sonographer
                 $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
@@ -957,6 +963,8 @@ class ClientController extends Controller
                     $booking->status = 'Cancelled';
                     $booking->update();
 
+                    $booking['virtual_balance'] = $sonographer->virtual_balance;
+
                     // Send Booking Cancelation Email to Doctor
                     sendCancellationEmail($booking);
 
@@ -968,6 +976,8 @@ class ClientController extends Controller
                     $sonographer->status = 'Suspended';
                     $sonographer->suspension_date = now()->toDateString();
                     $sonographer->update();
+
+                    $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                     // Send Booking Cancelation Email to Doctor
                     sendCancellationEmail($booking);
@@ -983,6 +993,8 @@ class ClientController extends Controller
                             $sonographer->suspension_date = now()->toDateString();
                             $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
                             $sonographer->update();
+                            
+                            $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                             // Send Booking Cancelation Email to Doctor
                             sendCancellationEmail($booking);
@@ -995,6 +1007,8 @@ class ClientController extends Controller
                             $sonographer->suspension_date = now()->toDateString();
                             $sonographer->suspension_end_date = $suspensionEndDate->toDateString();
                             $sonographer->update();
+
+                            $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                             // Send Booking Cancelation Email to Doctor
                             sendCancellationEmail($booking);
@@ -1009,6 +1023,8 @@ class ClientController extends Controller
                         $sonographer->suspension_date = now()->toDateString();
                         $sonographer->update();
 
+                        $booking['virtual_balance'] = $sonographer->virtual_balance;
+
                         // Send Booking Cancelation Email to Doctor
                         sendCancellationEmail($booking);
                     }
@@ -1018,6 +1034,8 @@ class ClientController extends Controller
                     $sonographer->status = 'Suspended';
                     $sonographer->suspension_date = now()->toDateString();
                     $sonographer->update();
+
+                    $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                     // Send Booking Cancelation Email to Doctor
                     sendCancellationEmail($booking);
