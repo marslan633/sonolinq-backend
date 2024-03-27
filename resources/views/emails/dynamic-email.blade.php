@@ -287,6 +287,7 @@
                   font-weight: 400;
                   text-decoration: none;
                   color: #ffffff;
+                  text-align: center;
                 "
               >
                 Address line 1, London, L2 4LN
@@ -301,6 +302,7 @@
                   font-weight: 400;
                   text-decoration: none;
                   color: #ffffff;
+                  text-align: center;
                 "
               >
                 <a
