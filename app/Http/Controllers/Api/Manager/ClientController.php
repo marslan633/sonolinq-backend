@@ -966,7 +966,7 @@ class ClientController extends Controller
                     $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                     // Send Booking Cancelation Email to Doctor
-                    sendCancellationEmail($booking);
+                    $this->sendCancellationEmail($booking);
 
                     return sendResponse(true, 200, 'Booking Cancelled Successfully!', $booking, 200);
                 } elseif ($businessDayCount >= 3 && $countCancelBookings >= 3 && $countCancelBookings < 6) {
@@ -980,7 +980,7 @@ class ClientController extends Controller
                     $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                     // Send Booking Cancelation Email to Doctor
-                    sendCancellationEmail($booking);
+                    $this->sendCancellationEmail($booking);
                     
                     return sendResponse(false, 200, 'Account Suspended! You have exceeded the cancellation limit.', $booking, 200);
                 } elseif ($countCancelBookings >= 6 || ($countCancelBookings >= 3 && $businessDayCount < 3)) {
@@ -997,7 +997,7 @@ class ClientController extends Controller
                             $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                             // Send Booking Cancelation Email to Doctor
-                            sendCancellationEmail($booking);
+                            $this->sendCancellationEmail($booking);
 
                             return sendResponse(false, 200, 'Your account has been suspended again for a year!', $booking, 200);
                         } elseif ($sonographer->suspension_end_date === null) {
@@ -1011,7 +1011,7 @@ class ClientController extends Controller
                             $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                             // Send Booking Cancelation Email to Doctor
-                            sendCancellationEmail($booking);
+                            $this->sendCancellationEmail($booking);
 
                             return sendResponse(false, 200, 'Your account has been suspended for a year!', $booking, 200);
                         } else {
@@ -1026,7 +1026,7 @@ class ClientController extends Controller
                         $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                         // Send Booking Cancelation Email to Doctor
-                        sendCancellationEmail($booking);
+                        $this->sendCancellationEmail($booking);
                     }
                     return sendResponse(false, 200, 'Account is suspended or cancellation not permitted within 72 hours notice.', $booking, 200);
                 } else {
@@ -1038,7 +1038,7 @@ class ClientController extends Controller
                     $booking['virtual_balance'] = $sonographer->virtual_balance;
 
                     // Send Booking Cancelation Email to Doctor
-                    sendCancellationEmail($booking);
+                    $this->sendCancellationEmail($booking);
 
                     return sendResponse(false, 200, 'Account is suspended immediately because cancellation not permitted within 72 hours notice.', $booking, 200);
                 }
