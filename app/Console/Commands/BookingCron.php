@@ -35,6 +35,13 @@ class BookingCron extends Command
                         ->get();
             
         foreach ($bookings as $booking) {
+            // update virtual balance of sonographer
+            $sonographer = Client::where('id', $booking->sonographer_id)->first();
+            $bookingAmount = $booking->reservation['amount'];
+            $calBalance = $sonographer->virtual_balance + $bookingAmount;
+            $sonographer->virtual_balance = $calBalance;
+            $sonographer->update();
+            
             $booking->complete_date = now()->format('Y-m-d H:i:s');
             $booking->status = 'Completed';
             $booking->save();

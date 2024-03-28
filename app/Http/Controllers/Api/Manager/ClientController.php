@@ -788,12 +788,27 @@ class ClientController extends Controller
         }
     }
 
-
+    // When Doctor Complete Booking
     public function completedBookingRequest($id) {
         try {
             $booking = Booking::with('reservation')->where('id', $id)->first();
-            
+            $sonographer = Client::where('id', $booking->sonographer_id)->first();
             $bookingAmount = $booking->reservation['amount'];
+            
+            // this is for demo purpose we will remove it later when we work with packages and then update Balance of Sonographer
+            $calBalance = $sonographer->virtual_balance + $bookingAmount;
+            $sonographer->virtual_balance = $calBalance;
+            $sonographer->update();
+                    
+            $booking->status = 'Completed';
+            $booking->save();
+
+            $booking['virtual_balance'] = $sonographer->virtual_balance;
+            return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
+            // this is for demo purpose we will remove it later when we work with packages and then update Balance of Sonographer
+
+
+                
             
             $sonographerID = $booking->sonographer_id;
 
@@ -850,8 +865,15 @@ class ClientController extends Controller
                     }
                 }
 
+                // update Balance of Sonographer
+                $calBalance = $sonographer->virtual_balance + $finalAmount;
+                $sonographer->virtual_balance = $calBalance;
+                $sonographer->update();
+                    
                 $booking->status = 'Completed';
                 $booking->save();
+
+                $booking['virtual_balance'] = $sonographer->virtual_balance;
                 return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
             } else {
                 return sendResponse(false, 200, 'Package not found for sonographer!', [], 200);
@@ -891,37 +913,50 @@ class ClientController extends Controller
             $businessDayCount = $this->countBusinessDays($currentDate, $shiftDate);
 
             // Determine the cancellation fee based on the business day count
-            if ($businessDayCount < 3) {
-                $cancellationFee = $bookingAmount - 250; // Late cancellation fee
-                $booking->cancellation_fee = $cancellationFee;
-                $booking->status = 'Cancelled';
-                $virtualBalance += $cancellationFee;
-                $booking->update();
-                
-                $doctor->virtual_balance = $virtualBalance;
-                $doctor->update();
+            if($booking->status === 'Active') {
+                if ($businessDayCount < 3) {
+                    $cancellationFee = $bookingAmount - 250; // Late cancellation fee
+                    $booking->cancellation_fee = $cancellationFee;
+                    $booking->status = 'Cancelled';
+                    $virtualBalance += $cancellationFee;
+                    $booking->update();
+                    
+                    $doctor->virtual_balance = $virtualBalance;
+                    $doctor->update();
 
-                $booking['virtual_balance'] = $doctor->virtual_balance;
+                    $booking['virtual_balance'] = $doctor->virtual_balance;
 
-                // Send Booking Cancelation Email to Sonographer
-                $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
+                    // Send Booking Cancelation Email to Sonographer
+                    $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
 
-                if($emailTemplate) {
-                    $sonographerDetails = $booking->load('sonographer');
-                    $details = [
-                        'subject' => $emailTemplate->subject,
-                        'body'=> $emailTemplate->body,
-                        'type' => $emailTemplate->type,
-                        'full_name' => $sonographerDetails->doctor['full_name']
-                    ];
+                    if($emailTemplate) {
+                        $sonographerDetails = $booking->load('sonographer');
+                        $details = [
+                            'subject' => $emailTemplate->subject,
+                            'body'=> $emailTemplate->body,
+                            'type' => $emailTemplate->type,
+                            'full_name' => $sonographerDetails->doctor['full_name']
+                        ];
 
-                    Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
-                }
+                        Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
+                    }
+                } else {
+                    $booking->status = 'Cancelled';
+                    $booking->update();
+
+                    $calBalance = $doctor->virtual_balance + $booking->reservation['amount'];
+                    $doctor->virtual_balance =  $calBalance;
+                    $doctor->update();
+
+                    $booking['virtual_balance'] = $doctor->virtual_balance;
+                    
+                    EligibleSonographer::where('booking_id', $booking->id)->delete();
+                    return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
+                } 
+                return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
+            } else {
+                return sendResponse(true, 200, 'Booking status is not active!', $booking, 200);
             }
-
-            // EligibleSonographer::where('booking_id', $booking->id)->delete();
-
-            return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
