@@ -28,6 +28,7 @@ class User extends Authenticatable
         'status',
         'role',
         'password',
+        'device_token'
     ];
 
     /**Setting Password Attribute

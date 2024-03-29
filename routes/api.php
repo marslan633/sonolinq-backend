@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Manager\SupportTicketController;
 use App\Http\Controllers\Api\Manager\TicketNoteController;
 use App\Http\Controllers\Api\Manager\EmailTemplateController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -89,6 +90,11 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
     // Level System Api For Admin
     Route::get('get-level-system', [ClientController::class, 'getLevelSystem']);
     Route::patch('update-level-system/{id}', [ClientController::class, 'updateLevelSystem']);
+
+    /*Defining Manager Notifications Routes*/
+    Route::get('notifications', [NotificationController::class, 'notifications']);
+    Route::get('unread-notifications', [NotificationController::class, 'unreadNotifications']);
+    Route::patch('read-notifications', [NotificationController::class, 'readManagerNotifications']);
 });
 
 
@@ -166,19 +172,10 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('update-ticket-note/{id}', [TicketNoteController::class, 'updateTicketNote']);
     Route::delete('delete-ticket-note/{id}', [TicketNoteController::class, 'deleteTicketNote']);
 
-    // FCM Working
-    Route::get('/user', function () {
-        // Generate CSRF token
-        $user = Auth::user();
-        $token = $user->createToken('Personal Access Token')->accessToken;
-        $user->device_token =  $token;
-        $user->save();
-
-        // Return the token in the response headers
-        return response()->json(['csrf_token' => $user]);
-    });
-
-    
+    /*Defining Client Notifications Routes*/
+    Route::get('get-notifications', [NotificationController::class, 'getNotifications']);
+    Route::get('get-unread-notifications', [NotificationController::class, 'getLatestUnreadNotifications']);
+    Route::patch('read-notifications', [NotificationController::class, 'readNotifications']);
 }); 
 Route::post('/send-web-notification', [ClientController::class, 'sendNotification']);
 

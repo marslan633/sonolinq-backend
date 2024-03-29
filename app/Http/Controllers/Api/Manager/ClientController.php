@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate, NotificationHistory};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,9 +23,11 @@ use Stripe\BankAccount;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use DateTime;
+use App\Traits\NotificationTrait;
 
 class ClientController extends Controller
 {
+    use NotificationTrait;
     /**
      * Display a listing of the resource.
      */
@@ -547,6 +549,27 @@ class ClientController extends Controller
                         Mail::to($sonographer->client['email'])->send(new DynamicMail($details)); 
                     }                         
                     // Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
+
+                    /* Send Booking Request Notification to Sonographers */
+                    $tokens = [$sonographer->client['device_token']];
+                    if($tokens) {
+                        $title = "Appointment Request";
+                        $body = "You have received appointment request from doctor";
+                        $client_id = $sonographer->client['id'];
+                        $module_id = $booking->id;
+                        $module_name = "Booking Request";
+
+                        $notification = new NotificationHistory();
+                        $notification->title = $title;
+                        $notification->body = $body;
+                        $notification->module_id = $module_id;
+                        $notification->module_name = $module_name;
+                        $notification->client_id = $client_id;
+                        $notification->save();
+                        
+                        $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+                        $this->sendNotification($tokens, $title, $body, $count);
+                    }
                 }
             }
 
@@ -609,6 +632,27 @@ class ClientController extends Controller
                 ];
 
                 Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+            }
+
+            /* Send Booking Accepted Notification to Sonographers */
+            $tokens = [$booking->doctor['device_token']];
+            if($tokens) {
+                $title = "Appointment Accepted!";
+                $body = "Your appointment request has been accepted from sonographer";
+                $doctor_id = $booking->doctor['id'];
+                $module_id = $booking->id;
+                $module_name = "Booking Accepted";
+
+                $notification = new NotificationHistory();
+                $notification->title = $title;
+                $notification->body = $body;
+                $notification->module_id = $module_id;
+                $notification->module_name = $module_name;
+                $notification->client_id = $doctor_id;
+                $notification->save();
+                        
+                $count = NotificationHistory::where('client_id', $doctor_id)->where('is_read', false)->count();
+                $this->sendNotification($tokens, $title, $body, $count);
             }
 
             $client_id = Auth::guard('client-api')->user()->id;
@@ -752,6 +796,27 @@ class ClientController extends Controller
 
                     Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
                 }
+
+                /* Send Booking Delivered Notification to Doctor */
+                $tokens = [$booking->doctor['device_token']];
+                if($tokens) {
+                    $title = "Appointment Delivered!";
+                    $body = "Your appointment request has been delivered from sonographer";
+                    $doctor_id = $booking->doctor['id'];
+                    $module_id = $booking->id;
+                    $module_name = "Booking Delivered";
+
+                    $notification = new NotificationHistory();
+                    $notification->title = $title;
+                    $notification->body = $body;
+                    $notification->module_id = $module_id;
+                    $notification->module_name = $module_name;
+                    $notification->client_id = $doctor_id;
+                    $notification->save();
+                       
+                    $count = NotificationHistory::where('client_id', $doctor_id)->where('is_read', false)->count();
+                    $this->sendNotification($tokens, $title, $body, $count);
+                }
             }
 
             // Send Booking Completed Email to Sonographer
@@ -768,6 +833,27 @@ class ClientController extends Controller
                     ];
 
                     Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details)); 
+                }
+                
+                /* Send Booking Completed Notification to Sonographer */
+                $tokens = [$booking->sonographer['device_token']];
+                if($tokens) {
+                    $title = "Appointment Completed!";
+                    $body = "Your appointment request has been completed by the doctor.";
+                    $sonographer_id = $booking->sonographer['id'];
+                    $module_id = $booking->id;
+                    $module_name = "Booking Completed";
+                            
+                    $notification = new NotificationHistory();
+                    $notification->title = $title;
+                    $notification->body = $body;
+                    $notification->module_id = $module_id;
+                    $notification->module_name = $module_name;
+                    $notification->client_id = $sonographer_id;
+                    $notification->save();
+
+                    $count = NotificationHistory::where('client_id', $sonographer_id)->where('is_read', false)->count();
+                    $this->sendNotification($tokens, $title, $body, $count);
                 }
             }
 
@@ -925,7 +1011,19 @@ class ClientController extends Controller
                     $doctor->update();
 
                     $booking['virtual_balance'] = $doctor->virtual_balance;
+ 
+                } else {
+                    $booking->status = 'Cancelled';
+                    $booking->update();
 
+                    $calBalance = $doctor->virtual_balance + $booking->reservation['amount'];
+                    $doctor->virtual_balance =  $calBalance;
+                    $doctor->update();
+
+                    $booking['virtual_balance'] = $doctor->virtual_balance;
+                    
+                    EligibleSonographer::where('booking_id', $booking->id)->delete();
+                } 
                     // Send Booking Cancelation Email to Sonographer
                     $emailTemplate = EmailTemplate::where('type', 'booking-cancel')->first();
 
@@ -940,19 +1038,27 @@ class ClientController extends Controller
 
                         Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
                     }
-                } else {
-                    $booking->status = 'Cancelled';
-                    $booking->update();
 
-                    $calBalance = $doctor->virtual_balance + $booking->reservation['amount'];
-                    $doctor->virtual_balance =  $calBalance;
-                    $doctor->update();
-
-                    $booking['virtual_balance'] = $doctor->virtual_balance;
-                    
-                    EligibleSonographer::where('booking_id', $booking->id)->delete();
-                    return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
-                } 
+                    /* Send Booking Cancelation Notification to Sonographer */
+                    $tokens = [$booking->sonographer['device_token']];
+                    if($tokens) {
+                        $title = "Booking Cancelated!";
+                        $body = "The doctor has cancelated the booking request!";
+                        $sonographer_id = $booking->sonographer['id'];
+                        $module_id = $booking->id;
+                        $module_name = "Booking Cancelation";
+                                
+                        $notification = new NotificationHistory();
+                        $notification->title = $title;
+                        $notification->body = $body;
+                        $notification->module_id = $module_id;
+                        $notification->module_name = $module_name;
+                        $notification->client_id = $sonographer_id;
+                        $notification->save();
+                        
+                        $count = NotificationHistory::where('client_id', $sonographer_id)->where('is_read', false)->count();
+                        $this->sendNotification($tokens, $title, $body, $count); 
+                    }
                 return sendResponse(true, 200, 'Booking Request Cancelled Successfully!', $booking, 200);
             } else {
                 return sendResponse(true, 200, 'Booking status is not active!', $booking, 200);
@@ -1100,6 +1206,26 @@ class ClientController extends Controller
 
             Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
         }
+        /* Send Booking Cancelation Notification to Doctor */
+        $tokens = [$booking->doctor['device_token']];
+        if($tokens) {
+            $title = "Booking Cancelated!";
+            $body = "The sonographer has been cancelated the booking request";
+            $doctor_id = $booking->doctor['id'];
+            $module_id = $booking->id;
+            $module_name = "Booking Cancelation";
+
+            $notification = new NotificationHistory();
+            $notification->title = $title;
+            $notification->body = $body;
+            $notification->module_id = $module_id;
+            $notification->module_name = $module_name;
+            $notification->client_id = $doctor_id;
+            $notification->save();
+
+            $count = NotificationHistory::where('client_id', $doctor_id)->where('is_read', false)->count();
+            $this->sendNotification($tokens, $title, $body, $count);
+        }  
     }
 
     // My changes in process working
@@ -2641,53 +2767,6 @@ if ($payout->status === 'paid') {
         }
     }
 
-    public function sendNotification(Request $request)
-    {
-        $url = 'https://fcm.googleapis.com/fcm/send';
-
-        // $FcmToken = Client::whereNotNull('device_token')->pluck('device_token')->all();
-        $FcmToken = [
-            'd9KpvQh1gTRRAS3ygstzJX:APA91bE6D3HaY3VNrFGByCyfpI3I_xxXh_UfnXn0xK45TFQjrvJDW4PXqrotvtVWM9OhjP0Z_aaDW3wA5q-5XduPFUTK0fmjso8Kf8IBlF4F7Q1xjTfEHs7W_c9WSKzs-Y3RPEQEv99f'
-        ];
-        
-        $serverKey = 'AAAAuwxMT4o:APA91bFRThKc_D2oQK_EtGqeQRzOZ9bTTIxUYIQfdlJYOfnG41ostYsBcoFFk1bGiKWVMA-aAwGwo2aCGtOP2kmYj1cQxyIyFYJO9FSZ0gvzZWOuH8W5SmlJKHy7-KMBbI5OQlxSNJj4'; // ADD SERVER KEY HERE PROVIDED BY FCM
-    
-        $data = [
-            "registration_ids" => $FcmToken,
-            "notification" => [
-                "title" => "Hello",
-                "body" => "Welcome to our placeform",  
-            ]
-        ];
-        $encodedData = json_encode($data);
-    
-        $headers = [
-            'Authorization:key=' . $serverKey,
-            'Content-Type: application/json',
-        ];
-    
-        $ch = curl_init();
-        
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        // Disabling SSL Certificate support temporarly
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $encodedData);
-        // Execute post
-        $result = curl_exec($ch);
-        if ($result === FALSE) {
-            die('Curl failed: ' . curl_error($ch));
-        }        
-        // Close connection
-        curl_close($ch);
-        // FCM response
-        return $result;
-    }
-
     public function getLevelSystem() {
         try {
             $items = LevelSystem::orderBy('id', 'asc')->get();
@@ -2708,137 +2787,5 @@ if ($payout->status === 'paid') {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
-
-    // this is for testing cron job remove it later
-    public function runCron() {
-        return $this->assignLevelsForRole('Doctor/Facility');
-        $this->assignLevelsForRole('Sonographer');
-
-        // $this->info('Client levels assigned successfully.');
-    }
-
-
-private function assignLevelsForRole($role)
-{
-    $levelSystems = LevelSystem::all();
-
-    $clients = Client::where('role', $role)
-                    ->where('is_verified', true)
-                    ->where('status', 'Active')
-                    ->get();
-
-    foreach ($clients as $client) {
-        $assignedLevel = null;
-        $prevLevel = $client->load('level')->level['level'];
-
-        foreach ($levelSystems as $levelSystem) {
-            if ($this->meetsLevelCriteria($client, $levelSystem, $role)) {
-                $assignedLevel = $levelSystem->level;
-                $client->update(['level_system' => $levelSystem->id]);         
-                break; // No need to check further levels once assigned
-            }
-        }
-        
-        // If Level 1 is assigned, check for Level 2
-        if ($assignedLevel === 'Level 1') {
-            $level2System = LevelSystem::where('level', 'Level 2')->first();
-            if ($this->meetsLevelCriteria($client, $level2System, $role)) {
-                $client->update(['level_system' => $level2System->id]);
-            }
-        }
-
-        // If no level system matched, apply Level 0
-        if ($assignedLevel === null) {
-            $level0System = LevelSystem::where('level', 'Level 0')->first();
-            $client->update(['level_system' => $level0System->id]);
-        }
-
-        
-                // After all level systems have been checked and level assigned, compare previous and new levels
-                // $newLevel = $client->load('level')->level['level'];
-                // // Check if level upgraded or downgraded
-                // if ($newLevel > $prevLevel) {
-                //     // Send email for level upgrade
-                //     $upgradeEmail = EmailTemplate::where('type', 'level-upgrade')->first();
-
-                //     $emailSubject = str_replace('{{level}}', $newLevel, $upgradeEmail->subject);
-                //     if($upgradeEmail){
-                //         $details = [
-                //             'subject' => $emailSubject,
-                //             'body'=> $upgradeEmail->body,
-                //             'type' => $upgradeEmail->type,
-                //             'full_name' => $client->full_name,
-                //             'level' => $newLevel
-                //         ];
-                //         Mail::to($client->email)->send(new DynamicMail($details));
-                //     }
-                // } elseif ($newLevel < $prevLevel) {
-                //     $downgradeEmail = EmailTemplate::where('type', 'level-downgrade')->first();
-
-                //     $emailSubject = str_replace('{{level}}', $newLevel, $downgradeEmail->subject);
-                //     if($downgradeEmail){
-                //         $details = [
-                //             'subject' => $emailSubject,
-                //             'body'=> $downgradeEmail->body,
-                //             'type' => $downgradeEmail->type,
-                //             'full_name' => $client->full_name,
-                //             'latest_level' => $newLevel,
-                //             'previous_level' => $prevLevel
-                //         ];
-                //         Mail::to($client->email)->send(new DynamicMail($details));
-                //     }
-                // }
-    }
-}
-
-private function meetsLevelCriteria($client, $levelSystem, $role)
-{
-    if (!$client->is_verified || $client->status !== 'Active') {
-        return false;
-    }
-
-    $field = $role === 'Doctor/Facility' ? 'doctor_id' : 'sonographer_id';
-
-    $successfulBookings = $this->countSuccessfulBookings($client, $field); //7
-    $rating = $this->calculateRating($client, $field); //80.0
-
-    if ($successfulBookings === 0 || ($levelSystem->days != 0 && $client->created_at->diffInDays(now()) >= $levelSystem->days)) {
-        if ($rating >= $levelSystem->rating && $successfulBookings >= $levelSystem->appointment) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
-private function calculateRating($client, $field)
-{
-    $reviews = Review::whereHas('booking', function ($query) use ($client, $field) {
-        $query->where($field, $client->id);
-    })->get();
-
-    $totalRating = 0;
-    $totalReviews = $reviews->count();
-
-    foreach ($reviews as $review) {
-        if ($field === 'doctor_id') {
-            $totalRating += $review->rating_sonographer;
-            
-        } else {
-            $totalRating += $review->rating_doctor;
-        }
-    }
-
-    // Prevent division by zero
-    $rating = $totalReviews > 0 ? ($totalRating / ($totalReviews * 5)) * 100 : 0;
-    return $rating;
-}
-
-private function countSuccessfulBookings($client, $field)
-{
-    return Booking::where($field, $client->id)
-                  ->where('status', 'Completed')
-                  ->count();
-}
-    // this is for testing cron job remove it later
+    
 }

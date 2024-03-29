@@ -29,4 +29,8 @@ class SupportTicket extends Model
     {
         return $this->hasMany(TicketNote::class, 'ticket_id');
     }
+
+    public function client() {
+        return $this->belongsTo(Client::class);
+    }
 }

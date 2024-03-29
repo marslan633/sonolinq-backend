@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\{SupportTicket};
+use App\Models\{SupportTicket, User, NotificationHistory};
 use Illuminate\Support\Facades\Auth;
+use App\Traits\NotificationTrait;
 
 class SupportTicketController extends Controller
 {
+    use NotificationTrait;
     /**
      * Display a listing of the resource.
      */
@@ -86,6 +88,26 @@ class SupportTicketController extends Controller
         try {
             $supportTicket->update($request->all());
             
+            /* Send Ticket Support Notification from Admin to Client */
+            $tokens = [$supportTicket->client['device_token']];
+            if($tokens) {
+                $title = "Support Ticket Response";
+                $body = "You have received support ticket from admin";
+                $client_id = $supportTicket->client['id'];
+                $module_id = $supportTicket->id;
+                $module_name = "Support Ticket";
+
+                $notification = new NotificationHistory();
+                $notification->title = $title;
+                $notification->body = $body;
+                $notification->module_id = $module_id;
+                $notification->module_name = $module_name;
+                $notification->client_id = $client_id;
+                $notification->save();
+                        
+                $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+                $this->sendNotification($tokens, $title, $body, $count);
+            }          
             return sendResponse(true, 200, 'supportTicket Updated Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -128,6 +150,32 @@ class SupportTicketController extends Controller
             $randomNumber = mt_rand(1000, 9999);
             $supportTicket->update(['ticket_tracking_id' => $prefix . $randomNumber . $supportTicket->id]);
  
+            /* Send Support Ticket Generated Notification to Admins (Users) */
+            $users = User::whereNotNull('device_token')->get();
+            if(!$users->isEmpty()) {
+                foreach($users as $user) {
+                    $tokens = [$user->device_token];
+                    if($tokens) {
+                        $title = "Support Ticket Generated";
+                        $body = "you received the support ticket";
+                        $user_id = $user->id;
+                        $module_id = $supportTicket->id;
+                        $module_name = "Support Ticket";
+
+                        $notification = new NotificationHistory();
+                        $notification->title = $title;
+                        $notification->body = $body;
+                        $notification->module_id = $module_id;
+                        $notification->module_name = $module_name;
+                        $notification->user_id = $user_id;
+                        $notification->save();
+
+                        $count = NotificationHistory::where('user_id', $user_id)->where('is_read', false)->count();
+                        $this->sendNotification($tokens, $title, $body, $count);
+                    }
+                } 
+            }
+            
             return sendResponse(true, 200, 'Support Ticket Created Successfully!', $supportTicket->load('booking'), 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

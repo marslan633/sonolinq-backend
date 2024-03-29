@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\{TicketNote};
+use App\Models\{TicketNote, User, NotificationHistory};
 use Illuminate\Support\Facades\Auth;
+use App\Traits\NotificationTrait;
 
 class TicketNoteController extends Controller
 {
+    use NotificationTrait;
     /**
      * Display a listing of the resource.
      */
@@ -42,8 +44,7 @@ class TicketNoteController extends Controller
             $ticketNote->ticket_id = $request->ticket_id;
             $ticketNote->type = $request->type;
             $ticketNote->note = $request->note;
-            $ticketNote->save();
- 
+            $ticketNote->save(); 
             return sendResponse(true, 200, 'Ticket Note Created Successfully!', $ticketNote->load('ticket'), 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -78,6 +79,27 @@ class TicketNoteController extends Controller
     {
         try {
             $ticketNote->update($request->all());
+
+            /* Send Ticket Note Notification to Client from Admin */
+            $tokens = [$ticketNote->client['device_token']];
+            if($tokens) {
+                $title = "Support Ticket Client Response";
+                $body = "You have received support ticket from client";
+                $client_id = $ticketNote->client['id'];
+                $module_id = $ticketNote->id;
+                $module_name = "Support Ticket";
+
+                $notification = new NotificationHistory();
+                $notification->title = $title;
+                $notification->body = $body;
+                $notification->module_id = $module_id;
+                $notification->module_name = $module_name;
+                $notification->client_id = $client_id;
+                $notification->save();
+                        
+                $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+                $this->sendNotification($tokens, $title, $body, $count);
+            } 
             
             return sendResponse(true, 200, 'ticketNote Updated Successfully!', $ticketNote->load('ticket'), 200);
         } catch (\Exception $ex) {
@@ -113,6 +135,32 @@ class TicketNoteController extends Controller
             $ticketNote->type = $request->type;
             $ticketNote->note = $request->note;
             $ticketNote->save();
+
+            /* Send Ticket Note Generated Notification to Admins (Users) */
+            $users = User::whereNotNull('device_token')->get();
+            if(!$users->isEmpty()) {
+                foreach($users as $user) {
+                    $tokens = [$user->device_token];
+                    if($tokens) {
+                        $title = "Ticket Note Generated";
+                        $body = "you received the ticket note";
+                        $user_id = $user->id;
+                        $module_id = $ticketNote->id;
+                        $module_name = "Ticket Note";
+
+                        $notification = new NotificationHistory();
+                        $notification->title = $title;
+                        $notification->body = $body;
+                        $notification->module_id = $module_id;
+                        $notification->module_name = $module_name;
+                        $notification->user_id = $user_id;
+                        $notification->save();
+
+                        $count = NotificationHistory::where('user_id', $user_id)->where('is_read', false)->count();
+                        $this->sendNotification($tokens, $title, $body, $count);
+                    }
+                } 
+            }
  
             return sendResponse(true, 200, 'Ticket Note Created Successfully!', $ticketNote->load('ticket'), 200);
         } catch (\Exception $ex) {
@@ -158,6 +206,32 @@ class TicketNoteController extends Controller
         try {
             $ticketNote = TicketNote::find($id);
             $ticketNote->update($request->all());
+
+            /* Send Ticket Note Generated Notification to Admins (Users) */
+            $users = User::whereNotNull('device_token')->get();
+            if(!$users->isEmpty()) {
+                foreach($users as $user) {
+                    $tokens = [$user->device_token];
+                    if($tokens) {
+                        $title = "Update: Ticket Note Generated";
+                        $body = "you received the update ticket note";
+                        $user_id = $user->id;
+                        $module_id = $ticketNote->id;
+                        $module_name = "Ticket Note";
+
+                        $notification = new NotificationHistory();
+                        $notification->title = $title;
+                        $notification->body = $body;
+                        $notification->module_id = $module_id;
+                        $notification->module_name = $module_name;
+                        $notification->user_id = $user_id;
+                        $notification->save();
+
+                        $count = NotificationHistory::where('user_id', $user_id)->where('is_read', false)->count();
+                        $this->sendNotification($tokens, $title, $body, $count);
+                    }
+                } 
+            }
             
             return sendResponse(true, 200, 'Ticket Note Updated Successfully!', $ticketNote->load('ticket'), 200);
         } catch (\Exception $ex) {

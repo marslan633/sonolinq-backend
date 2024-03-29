@@ -21,4 +21,8 @@ class TicketNote extends Model
     {
         return $this->belongsTo(SupportTicket::class);
     }
+
+    public function client() {
+        return $this->belongsTo(Client::class);
+    }
 }

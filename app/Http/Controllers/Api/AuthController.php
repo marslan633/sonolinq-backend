@@ -24,8 +24,13 @@ class AuthController extends Controller
     public function login(LoginRequest $request){
         try{
             $type = $request->type;
-            if(Auth::guard($type)->attempt($request->except('type'))){
+            if(Auth::guard($type)->attempt($request->except(['type', 'device_token']))){
                 $user = Auth::guard($type)->user();
+                /*Update device_token if provided in the request*/
+                if ($request->has('device_token')) {
+                    $user->device_token = $request->device_token;
+                    $user->save();
+                }
                 /*Checking Staff Status*/
                 if(!$user->status && $type == 'user') return sendResponse(false, 401, 'Your account is not active. please contact support.', [], 200);
                 /*Checking Client Email Verificatoin*/

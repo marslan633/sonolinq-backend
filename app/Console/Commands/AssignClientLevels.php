@@ -8,12 +8,15 @@ use App\Models\Booking;
 use App\Models\LevelSystem;
 use App\Models\Review;
 use App\Models\EmailTemplate;
+use App\Models\NotificationHistory;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DynamicMail;
 use Carbon\Carbon;
+use App\Traits\NotificationTrait;
 
 class AssignClientLevels extends Command
 {
+    use NotificationTrait;
     /**
      * The name and signature of the console command.
      *
@@ -95,6 +98,26 @@ class AssignClientLevels extends Command
                     ];
                      Mail::to($client->email)->send(new DynamicMail($details));
                 }
+                /* Send Level Upgrade Notification to Client */
+                $tokens = [$client->device_token];
+                if($tokens) {
+                    $title = "Congratulations! You've Reached";
+                    $body = "Congratulations! You've Reached";
+                    $client_id = $client->id;
+                    $module_id = $client->level_system;
+                    $module_name = "Level Upgrade";
+                            
+                    $notification = new NotificationHistory();
+                    $notification->title = $title;
+                    $notification->body = $body;
+                    $notification->module_id = $module_id;
+                    $notification->module_name = $module_name;
+                    $notification->client_id = $client_id;
+                    $notification->save();
+
+                    $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+                    $this->sendNotification($tokens, $title, $body, $count);
+                }
             } elseif ($newLevel < $prevLevel) {
                 $downgradeEmail = EmailTemplate::where('type', 'level-downgrade')->first();
 
@@ -109,6 +132,27 @@ class AssignClientLevels extends Command
                         'previous_level' => $prevLevel
                     ];
                     Mail::to($client->email)->send(new DynamicMail($details));
+                }
+
+                /* Send Level Downgrade Notification to Client */
+                $tokens = [$client->device_token];
+                if($tokens) {
+                    $title = "Important: Your Account Level is Downgraded";
+                    $body = "Important: Your account level is downgraded!";
+                    $client_id = $client->id;
+                    $module_id = $client->level_system;
+                    $module_name = "Level Downgrade";
+                            
+                    $notification = new NotificationHistory();
+                    $notification->title = $title;
+                    $notification->body = $body;
+                    $notification->module_id = $module_id;
+                    $notification->module_name = $module_name;
+                    $notification->client_id = $client_id;
+                    $notification->save();
+
+                    $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+                    $this->sendNotification($tokens, $title, $body, $count);
                 }
             }
         }
