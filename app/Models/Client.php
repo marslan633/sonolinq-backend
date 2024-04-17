@@ -40,7 +40,8 @@ class Client extends Authenticatable
         'level_system',
         'virtual_balance',
         'suspension_date',
-        'suspension_end_date'
+        'suspension_end_date',
+        'package_id'
     ];
 
     /**Setting Password Attribute
@@ -111,5 +112,9 @@ class Client extends Authenticatable
 
     public function level() {
         return $this->belongsTo(LevelSystem::class, 'level_system');
+    }
+
+    public function package() {
+        return $this->belongsTo(Package::class);
     }
 }

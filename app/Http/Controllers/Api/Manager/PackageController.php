@@ -16,7 +16,7 @@ class PackageController extends Controller
     public function index(Request $request)
     {
         try {
-            $packages = Package::with('clients')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+            $packages = Package::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             return sendResponse(true, 200, 'Packages Fetched Successfully!', $packages, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -41,9 +41,9 @@ class PackageController extends Controller
             $package['user_id'] =  Auth::guard('user-api')->user()->id;
             $package = Package::create($package);
 
-            $package->clients()->attach($request->clients);
+            // $package->clients()->attach($request->clients);
               
-            $packageObj = Package::where('id', $package->id)->with('clients')->first();
+            $packageObj = Package::where('id', $package->id)->first();
             return sendResponse(true, 200, 'Package Created Successfully!', $packageObj, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -56,7 +56,7 @@ class PackageController extends Controller
     public function show(string $id)
     {
         try {
-            $package = Package::where('id', $id)->with('clients')->first();
+            $package = Package::where('id', $id)->first();
             return sendResponse(true, 200, 'Package Fetched Successfully!', $package, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -90,12 +90,13 @@ class PackageController extends Controller
                 'type' => $request->input('type'),
                 'payment' => $request->input('payment'),
                 'status' => $status,
+                'name' => $request->input('name'),
             ]);
             
             
-            $package->clients()->sync($request->clients);
+            // $package->clients()->sync($request->clients);
 
-            $objPackage = Package::where('id', $package->id)->with('clients')->first();
+            $objPackage = Package::where('id', $package->id)->first();
             return sendResponse(true, 200, 'Package Updated Successfully!', $objPackage, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -109,7 +110,7 @@ class PackageController extends Controller
     {
         try {
             $package = Package::findOrFail($id);
-            $package->clients()->detach();
+            // $package->clients()->detach();
             $package->delete();
             return sendResponse(true, 200, 'Package Deleted Successfully!', [], 200);
         } catch (\Exception $ex) {

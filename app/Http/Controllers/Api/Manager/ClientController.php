@@ -34,7 +34,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         try {
-            $staff = Client::with('company.type_of_services', 'company.registries', 'addresses')
+            $staff = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')
                 ->whereIn('status', explode(',', $request->status))
                 ->orderBy('id', 'desc')
                 ->get();
@@ -52,7 +52,7 @@ class ClientController extends Controller
     {
         
         try {
-            $client = Client::with('company.type_of_services', 'company.registries', 'addresses')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -176,7 +176,7 @@ class ClientController extends Controller
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services', 'company.registries')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'package')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {
@@ -253,7 +253,7 @@ class ClientController extends Controller
     public function getClient() { 
         try {
             $id =  Auth::guard('client-api')->user()->id;
-            $client = Client::with('company.type_of_services', 'company.registries', 'addresses')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -356,7 +356,7 @@ class ClientController extends Controller
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services', 'company.registries')->find($id);
+            $client = Client::with('company.type_of_services', 'company.registries', 'package')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {
