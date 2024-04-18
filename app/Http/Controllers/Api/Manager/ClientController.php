@@ -878,19 +878,19 @@ class ClientController extends Controller
     public function completedBookingRequest($id) {
         try {
             $booking = Booking::with('reservation')->where('id', $id)->first();
-            $sonographer = Client::where('id', $booking->sonographer_id)->first();
+            $sonographer = Client::where('id', $booking->sonographer_id)->with('package')->first();
             $bookingAmount = $booking->reservation['amount'];
             
             // this is for demo purpose we will remove it later when we work with packages and then update Balance of Sonographer
-            $calBalance = $sonographer->virtual_balance + $bookingAmount;
-            $sonographer->virtual_balance = $calBalance;
-            $sonographer->update();
+            // $calBalance = $sonographer->virtual_balance + $bookingAmount;
+            // $sonographer->virtual_balance = $calBalance;
+            // $sonographer->update();
                     
-            $booking->status = 'Completed';
-            $booking->save();
+            // $booking->status = 'Completed';
+            // $booking->save();
 
-            $booking['virtual_balance'] = $sonographer->virtual_balance;
-            return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
+            // $booking['virtual_balance'] = $sonographer->virtual_balance;
+            // return sendResponse(true, 200, 'Booking Request Completed Successfully!', $booking, 200);
             // this is for demo purpose we will remove it later when we work with packages and then update Balance of Sonographer
 
 
@@ -898,11 +898,13 @@ class ClientController extends Controller
             
             $sonographerID = $booking->sonographer_id;
 
-            // find sonographer package
-            $findPackage = Package::whereHas('clients', function ($query) use ($sonographerID) {
-                $query->where('client_id', $sonographerID);
-            })->first();
+            // find sonographer package old implementation
+            // $findPackage = Package::whereHas('clients', function ($query) use ($sonographerID) {
+            //     $query->where('client_id', $sonographerID);
+            // })->first();
 
+            // find sonographer package
+            $findPackage = $sonographer->package;
 
             if ($findPackage) {
                 $packageType = $findPackage->type;
