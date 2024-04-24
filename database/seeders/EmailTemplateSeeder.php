@@ -86,7 +86,7 @@ class EmailTemplateSeeder extends Seeder
             ],
             [
                 "user_id" => 2,
-                "subject" => "Inactive Client Email",
+                "subject" => "User Email",
                 "body" => "<h1>Hi, {{username}}!</h1><p>{{reason}}</p>",
                 "type" => "inactive-client-email",
                 "receiver" => "clients",

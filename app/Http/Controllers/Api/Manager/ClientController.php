@@ -185,7 +185,7 @@ class ClientController extends Controller
                 $emailTemplate = EmailTemplate::where('type', 'inactive-client-email')->first();
                 if($emailTemplate) {
                     $details = [
-                        'subject' => $emailTemplate->subject,
+                        'subject' => $client->status." ".$emailTemplate->subject,
                         'body'=> $emailTemplate->body,
                         'type' => $emailTemplate->type,
                         'full_name' => $client->full_name,
