@@ -193,3 +193,14 @@ Route::get('/get-sonographer-types', [SonographerTypeController::class, 'getSono
 Route::get('/get-sonographer-time', [SonographerTimeController::class, 'getSonographerTime']);
 Route::get('/get-term', [TermController::class, 'getTerm']);
 Route::get('/run-cron', [ClientController::class, 'runCron']);
+
+
+Route::get('completed-booking-request-stripe/{id}', [ClientController::class, 'completedBookingRequestStripe']);
+
+
+
+/**
+ * Stripe API's
+ * **/
+Route::post('create-stripe-connected-account', [ClientController::class, 'createStripeConnectedAccount']);
+Route::post('transfer-fund-connected-account', [ClientController::class, 'transferFundConnectedAccount']);

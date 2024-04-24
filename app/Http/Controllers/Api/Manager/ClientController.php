@@ -24,6 +24,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use DateTime;
 use App\Traits\NotificationTrait;
+use Stripe\Account;
+use Stripe\Exception\InvalidRequestException;
 
 class ClientController extends Controller
 {
@@ -1231,6 +1233,125 @@ class ClientController extends Controller
     }
 
     // My changes in process working
+
+    /**
+     * Stripe Connected Account API's.
+     */
+    public function createStripeConnectedAccount(Request $request) {
+        try {
+            $frontFilePath = $request->file('document_front')->getRealPath();
+            $backFilePath = $request->file('document_back')->getRealPath();
+            $frontFileContents = Storage::get($frontFilePath);
+            $backFileContents = Storage::get($backFilePath);
+
+            // Set your Stripe secret key
+            Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            // Create connected account
+            $account = \Stripe\Account::create([
+                'type' => 'custom',
+                'country' => $request->country, // Required: country code of the account
+                'business_type' => $request->business_type, // Required: type of business (individual, company)
+                'capabilities' => [
+                    'card_payments' => ['requested' => true],
+                    'transfers' => ['requested' => true],
+                ],
+                'business_profile' => [
+                    "mcc" => $request->industry_mcc,
+                    'name' => $request->business_name, // Required: business name
+                    'url' => $request->business_url, // Optional: business website URL
+                    'support_email' => $request->support_email, // Optional: support email address
+                    'support_phone' => $request->support_phone, // Optional: support phone number
+                ],
+                'individual' => [
+                    'first_name' => $request->first_name, // Required: first name of the individual
+                    'last_name' => $request->last_name, // Required: last name of the individual
+                    'email' => $request->email, // Required: email address of the individual
+                    'phone' => $request->phone_number, // Phone number
+                    'dob' => [
+                        'day' => $request->dob_day, // Required: day of birth
+                        'month' => $request->dob_month, // Required: month of birth
+                        'year' => $request->dob_year, // Required: year of birth
+                    ],
+                    'ssn_last_4' => $request->ssn_last_4, // Last 4 digits of SSN
+                    'address' => [
+                        'line1' => $request->address_line1, // Required: address line 1
+                        'city' => $request->address_city, // Required: city
+                        'postal_code' => $request->address_postal_code, // Required: postal code
+                        'state' => $request->address_state, // Required: state
+                        'country' => $request->address_country, // Required: country code
+                    ],
+                    'verification' => [
+                        'document' => [ // Required: document verification
+                            'front' => base64_encode($frontFileContents), // Required: front side of the document
+                            'back' => base64_encode($backFileContents), // Optional: back side of the document
+                        ],
+                    ],
+                ],
+                'tos_acceptance' => [
+                    'date' => time(), // Required: current timestamp
+                    'ip' => $request->ip(), // Required: IP address of the account holder
+                ],
+            ]);
+
+            // Add bank account details
+            $bankAccount = \Stripe\Account::createExternalAccount(
+                $account->id,
+                [
+                    'external_account' => [
+                        'object' => 'bank_account', // Specify the type of external account
+                        'country' => $request->bank_country,  // Replace with the connected account's country code
+                        'currency' => $request->currency,
+                        'account_holder_name' => $request->account_holder_name,  // Replace with the account holder's name
+                        'account_holder_type' => $request->account_holder_type,  // Replace with 'individual' or 'company'
+                        'routing_number' => $request->routing_number,  // Replace with the connected account's bank routing number
+                        'account_number' => $request->account_number,  // Replace with the connected account's bank account number
+                    ],
+                ]
+            );
+
+            // Return the created connected account
+            return $account;
+        } catch (InvalidRequestException $e) {
+            // Handle exceptions
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function transferFundConnectedAccount(Request $request) {
+        try {
+            // Get recipient's Stripe account ID
+            $recipientAccountId = $request->input('recipient_account_id');
+
+            // Retrieve account information
+            $account = \Stripe\Account::retrieve($recipientAccountId);
+
+            // Check verification status
+            if ($account->charges_enabled && $account->details_submitted) {
+                // Account is verified, proceed with transfer
+                $transfer = Transfer::create([
+                    'amount' => 1000, // Amount in cents
+                    'currency' => 'usd',
+                    'destination' => $recipientAccountId,
+                ]);
+
+                // Handle response
+                if ($transfer) {
+                    // Transfer successful
+                    return response()->json(['message' => 'Transfer successful'], 200);
+                } else {
+                    // Transfer failed
+                    return response()->json(['message' => 'Transfer failed'], 500);
+                }
+            } else {
+                // Account is not verified
+                return response()->json(['message' => 'Recipient account is not verified'], 400);
+            }
+        } catch (InvalidRequestException $e) {
+            // Handle exceptions
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
     public function completedBookingRequestStripe($id) {
 // Set your Stripe secret key
 Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
