@@ -83,7 +83,14 @@ class EmailTemplateSeeder extends Seeder
                 "body" => "<h1>Important: Downgrade Notification</h1><p>Dear {{username}},</p><p>We regret to inform you that your account has been downgraded from {{previous_level}} to {{latest_level}}.</p><p>This action was taken due to [reason for downgrade, e.g., inactivity, violation of terms, etc.]. We understand this may be disappointing, and we encourage you to reach out if you have any questions or concerns regarding this change.</p><p>Thank you for your understanding.</p><p>Best regards,</p><p>SonoLinq Manager</p>",
                 "type" => "level-downgrade",
                 "receiver" => "clients",
-            ]
+            ],
+            [
+                "user_id" => 2,
+                "subject" => "Inactive Client Email",
+                "body" => "<h1>Hi, {{username}}!</h1><p>{{reason}}</p>",
+                "type" => "inactive-client-email",
+                "receiver" => "clients",
+            ],
         ];
 
         foreach ($templates as $templateData) {

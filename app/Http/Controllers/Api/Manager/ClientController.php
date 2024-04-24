@@ -180,6 +180,21 @@ class ClientController extends Controller
             // }
             $client = Client::with('company.type_of_services', 'company.registries', 'package')->find($id);
 
+            if ($client && in_array($client->status, ['Deactive', 'Rejected', 'Suspended'])) {
+                // Send email to the client
+                $emailTemplate = EmailTemplate::where('type', 'inactive-client-email')->first();
+                if($emailTemplate) {
+                    $details = [
+                        'subject' => $emailTemplate->subject,
+                        'body'=> $emailTemplate->body,
+                        'type' => $emailTemplate->type,
+                        'full_name' => $client->full_name,
+                        'reason' => $request->reason,
+                    ];
+                    Mail::to($client->email)->send(new DynamicMail($details));
+                }
+            }
+
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

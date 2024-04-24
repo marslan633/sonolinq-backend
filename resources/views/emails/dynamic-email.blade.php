@@ -215,6 +215,8 @@
                   $data = str_replace(['{{username}}', '{{level}}'], [$details['full_name'], $details['level']], $details['body']);
                 } elseif ($details['type'] == 'level-downgrade') {
                   $data = str_replace(['{{username}}', '{{previous_level}}', '{{latest_level}}'], [$details['full_name'], $details['previous_level'], $details['latest_level']], $details['body']);
+                } elseif ($details['type'] == 'inactive-client-email') {
+                  $data = str_replace(['{{username}}', '{{reason}}'], [$details['full_name'], $details['reason']], $details['body']);
                 }
             @endphp
 
