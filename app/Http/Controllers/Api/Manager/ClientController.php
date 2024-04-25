@@ -26,6 +26,8 @@ use DateTime;
 use App\Traits\NotificationTrait;
 use Stripe\Account;
 use Stripe\Exception\InvalidRequestException;
+use Stripe\StripeClient;
+use Exception;
 
 class ClientController extends Controller
 {
@@ -1363,6 +1365,34 @@ class ClientController extends Controller
             }
         } catch (InvalidRequestException $e) {
             // Handle exceptions
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function createAccountSession(Request $request)
+    {
+        try {
+            $stripe = new StripeClient("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            
+            $account_session = $stripe->accountSessions->create([
+                'account' => $request->input('connected_account_id'), // assuming connected_account_id is passed through the request
+                'components' => [
+                    'payments' => [
+                        'enabled' => true,
+                        'features' => [
+                            'refund_management' => true,
+                            'dispute_management' => true,
+                            'capture_payments' => true,
+                        ],
+                    ],
+                ],
+            ]);
+
+            return response()->json([
+                'client_secret' => $account_session->client_secret
+            ]);
+        } catch (Exception $e) {
+            error_log("An error occurred when calling the Stripe API to create an account session: {$e->getMessage()}");
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
