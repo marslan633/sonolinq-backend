@@ -1377,14 +1377,10 @@ class ClientController extends Controller
             $account_session = $stripe->accountSessions->create([
                 'account' => $request->input('connected_account_id'), // assuming connected_account_id is passed through the request
                 'components' => [
-                    'payments' => [
-                        'enabled' => true,
-                        'features' => [
-                            'refund_management' => true,
-                            'dispute_management' => true,
-                            'capture_payments' => true,
-                        ],
-                    ],
+                    'account_onboarding' => [
+                    'enabled' => true,
+                    'features' => ['external_account_collection' => true],
+                    ]
                 ],
             ]);
 
