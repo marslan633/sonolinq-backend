@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate, NotificationHistory, Transaction};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate, NotificationHistory, Transaction, ConnectedAccount};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1263,7 +1263,178 @@ class ClientController extends Controller
     // My changes in process working
 
     /**
-     * Stripe Connected Account API's.
+     * Account Creation, Verification, Transfers and Transactions History API's.
+     */
+
+    public function createConnectAccount(Request $request) {
+        try {
+            Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            
+            // Create connected account
+            $account = \Stripe\Account::create([
+                'type' => 'custom',
+                'country' => $request->country, // Required: country code of the account
+                'business_type' => $request->business_type, // Required: type of business (individual, company)
+                'capabilities' => [
+                    'card_payments' => ['requested' => true],
+                    'transfers' => ['requested' => true],
+                ],
+                'individual' => [
+                    'first_name' => $request->first_name, // Required: first name of the individual
+                    'last_name' => $request->last_name, // Required: last name of the individual
+                    'email' => $request->email, // Required: email address of the individual
+                    'dob' => [
+                        'day' => $request->dob_day, // Required: day of birth
+                        'month' => $request->dob_month, // Required: month of birth
+                        'year' => $request->dob_year, // Required: year of birth
+                    ],
+                    
+                ],
+                'tos_acceptance' => [
+                    'date' => time(), // Required: current timestamp
+                    'ip' => $request->ip(), // Required: IP address of the account holder
+                ],
+            ]);
+            
+            // Determine the status based on different fields in the Stripe account object
+            $status = '';
+            
+            if ($account->charges_enabled && $account->payouts_enabled) {
+                $status = 'Verified';
+            } elseif (!$account->charges_enabled && !$account->payouts_enabled) {
+                $status = 'Unverified';
+            } else {
+                $status = 'Pending';
+            }
+
+            // Create connected account record
+            $connectedAccount = new ConnectedAccount();
+            $connectedAccount->account_id = $account->id;
+            $connectedAccount->status = $status;
+            $connectedAccount->client_id = Auth::guard('client-api')->user()->id;
+            $connectedAccount->save();
+            
+            return sendResponse(true, 200, 'Connect Account Created, Please verify your account!', $account, 200);
+        } catch (InvalidRequestException $e) {
+            return sendResponse(false, 500, 'Internal Server Error', $e->getMessage(), 200);
+        }
+    }
+
+    public function verifyConnectAccount($accountId) {
+        try {
+            $stripe = new StripeClient("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            
+            $accountSession = $stripe->accountSessions->create([
+                'account' => $accountId, // connected_account_id
+                'components' => [
+                    'account_onboarding' => [
+                        'enabled' => true,
+                        'features' => ['external_account_collection' => true],
+                    ]
+                ],
+            ]);
+
+            $data = [
+                'client_secret' => $accountSession->client_secret,
+            ];
+
+            return sendResponse(true, 200, 'Account Session Generate For Account Verification', $data, 200);
+            
+        } catch (Exception $e) {
+            error_log("An error occurred when calling the Stripe API to create an account session: {$e->getMessage()}");
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getConnectAccounts(Request $request) {
+        try {
+            $accounts = ConnectedAccount::whereIn('status', explode(',', $request->status))
+                ->orderBy('id', 'desc')
+                ->get();
+
+            return sendResponse(true, 200, 'Accounts Fetched Successfully!', $accounts, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function withdrawalAmount(Request $request)
+    {
+        try {
+            // Fetch the authenticated client
+            $client = Auth::guard('client-api')->user();
+
+            // Check if user has sufficient balance
+            if ($client->virtual_balance < $request->amount) {
+                return sendResponse(false, 200, 'Insufficient balance', [], 200);
+            }
+
+            // Begin a database transaction
+            DB::beginTransaction();
+
+            // Deduct withdrawal amount from user's balance
+            $client->virtual_balance -= $request->amount;
+            $client->save();
+
+            // Record transaction
+            $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
+
+            $transaction = Transaction::create([
+                'client_id' => $client->id,
+                'transaction_id' => $transactionId,
+                'amount' => $request->amount,
+                'type' => 'withdrawal',
+                'created_at' => now(),
+            ]);
+
+            // Get recipient's Stripe account ID
+            $recipientAccountId = $request->input('recipient_account_id');
+
+            // Retrieve account information
+            $account = \Stripe\Account::retrieve($recipientAccountId);
+
+            // Check verification status
+            if ($account->charges_enabled && $account->details_submitted) {
+                // Create transfer
+                $transfer = Transfer::create([
+                    'amount' => $request->amount * 100, // Amount in cents
+                    'currency' => 'usd',
+                    'destination' => $recipientAccountId,
+                ]);
+
+                // Commit the transaction if transfer is successful
+                if ($transfer) {
+                    DB::commit();
+                    return sendResponse(true, 200, 'Withdrawal successful!', [], 200);
+                } else {
+                    // Rollback the transaction if transfer fails
+                    DB::rollback();
+                    return sendResponse(false, 200, 'Withdrawal failed!', [], 200);
+                }
+            } else {
+                // Rollback the transaction if account is not verified
+                DB::rollback();
+                return sendResponse(false, 200, 'Recipient account is not verified', [], 200);
+            }
+        } catch (\Exception $ex) {
+            // Rollback the transaction in case of any exception
+            DB::rollback();
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function transactionsHistory() {
+        try {
+            $id =  Auth::guard('client-api')->user()->id;
+            $transactions = Transaction::where('client_id', $id)->orderBy('id', 'desc')->get();
+            return sendResponse(true, 200, 'Transactions Fetched Successfully!', $transactions, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    /**
+     * Stripe Connected Account Standard API's 
      */
     public function createStripeConnectedAccount(Request $request) {
         try {
@@ -1379,7 +1550,9 @@ class ClientController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
+    /**
+     * Stripe Connected Account Verification for OnBoarding UI (Session Creation).
+     */
     public function createAccountSession(Request $request)
     {
         try {
@@ -2958,46 +3131,6 @@ if ($payout->status === 'paid') {
             $item->update($request->all());
             
             return sendResponse(true, 200, 'Level System Updated Successfully!', $item, 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
-        }
-    }
-    
-    public function withdrawalAmount(Request $request) {
-        try {
-            $client =  Auth::guard('client-api')->user();
-
-            // Check if user has sufficient balance
-            if ($client->virtual_balance < $request->amount) {
-                return sendResponse(true, 200, 'Insufficient balance', [], 200);
-            }
-
-            // Deduct withdrawal amount from user's balance
-            $client->virtual_balance -= $request->amount;
-            $client->save();
-
-            // Record transaction
-            $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
-            
-            Transaction::create([
-                'client_id' => $client->id,
-                'transaction_id' => $transactionId,
-                'amount' => $request->amount,
-                'type' => 'withdrawal',
-                'created_at' => now(),
-            ]);
-            
-            return sendResponse(true, 200, 'Withdrawal successful!', [], 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
-        }
-    }
-
-    public function transactionsHistory() {
-        try {
-            $id =  Auth::guard('client-api')->user()->id;
-            $transactions = Transaction::where('client_id', $id)->get();
-            return sendResponse(true, 200, 'Transactions Fetched Successfully!', $transactions, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }

@@ -177,7 +177,10 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('get-unread-notifications', [NotificationController::class, 'getLatestUnreadNotifications']);
     Route::patch('read-notifications', [NotificationController::class, 'readNotifications']);
 
-
+    /* Account Creation, Transfers and Transactions History Routes*/
+    Route::post('create-connect-account', [ClientController::class, 'createConnectAccount']);
+    Route::get('verify-connect-account/{account_id}', [ClientController::class, 'verifyConnectAccount']);
+    Route::get('connect-accounts', [ClientController::class, 'getConnectAccounts']);
     Route::post('withdrawal-amount', [ClientController::class, 'withdrawalAmount']);
     Route::get('transactions', [ClientController::class, 'transactionsHistory']);
 }); 
