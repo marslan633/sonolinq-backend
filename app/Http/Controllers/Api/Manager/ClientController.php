@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Manager\UpdateClientRequest;
-use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate, NotificationHistory};
+use App\Models\{Client, Company, Booking, Preference, EligibleSonographer, Reservation, Service, BankInfo, Package, ServiceCategory, Registry, LevelSystem, Review, EmailTemplate, NotificationHistory, Transaction};
 use App\Models\Configuration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -976,6 +976,17 @@ class ClientController extends Controller
                 $calBalance = $sonographer->virtual_balance + $finalAmount;
                 $sonographer->virtual_balance = $calBalance;
                 $sonographer->update();
+
+                // Record transaction
+                $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
+            
+                Transaction::create([
+                    'client_id' => $sonographer->id,
+                    'transaction_id' => $transactionId,
+                    'amount' => $finalAmount,
+                    'type' => 'deposit',
+                    'created_at' => now(),
+                ]);
                     
                 $booking->status = 'Completed';
                 $booking->save();
@@ -2952,4 +2963,43 @@ if ($payout->status === 'paid') {
         }
     }
     
+    public function withdrawalAmount(Request $request) {
+        try {
+            $client =  Auth::guard('client-api')->user();
+
+            // Check if user has sufficient balance
+            if ($client->virtual_balance < $request->amount) {
+                return sendResponse(true, 200, 'Insufficient balance', [], 200);
+            }
+
+            // Deduct withdrawal amount from user's balance
+            $client->virtual_balance -= $request->amount;
+            $client->save();
+
+            // Record transaction
+            $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
+            
+            Transaction::create([
+                'client_id' => $client->id,
+                'transaction_id' => $transactionId,
+                'amount' => $request->amount,
+                'type' => 'withdrawal',
+                'created_at' => now(),
+            ]);
+            
+            return sendResponse(true, 200, 'Withdrawal successful!', [], 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
+    public function transactionsHistory() {
+        try {
+            $id =  Auth::guard('client-api')->user()->id;
+            $transactions = Transaction::where('client_id', $id)->get();
+            return sendResponse(true, 200, 'Transactions Fetched Successfully!', $transactions, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
 }

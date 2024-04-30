@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\NotificationHistory;
 use App\Models\EmailTemplate;
 use App\Models\Client;
+use App\Models\Transaction;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DynamicMail;
 use Carbon\Carbon;
@@ -48,6 +49,17 @@ class BookingCron extends Command
             $calBalance = $sonographer->virtual_balance + $bookingAmount;
             $sonographer->virtual_balance = $calBalance;
             $sonographer->update();
+
+            // Record transaction
+            $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
+            
+            Transaction::create([
+                'client_id' => $sonographer->id,
+                'transaction_id' => $transactionId,
+                'amount' => $bookingAmount,
+                'type' => 'deposit',
+                'created_at' => now(),
+            ]);
             
             $booking->complete_date = now()->format('Y-m-d H:i:s');
             $booking->status = 'Completed';

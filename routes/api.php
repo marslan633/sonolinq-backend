@@ -176,6 +176,10 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('get-notifications', [NotificationController::class, 'getNotifications']);
     Route::get('get-unread-notifications', [NotificationController::class, 'getLatestUnreadNotifications']);
     Route::patch('read-notifications', [NotificationController::class, 'readNotifications']);
+
+
+    Route::post('withdrawal-amount', [ClientController::class, 'withdrawalAmount']);
+    Route::get('transactions', [ClientController::class, 'transactionsHistory']);
 }); 
 Route::post('/send-web-notification', [ClientController::class, 'sendNotification']);
 
