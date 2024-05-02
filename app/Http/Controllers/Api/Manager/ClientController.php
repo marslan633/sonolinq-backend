@@ -1320,10 +1320,10 @@ class ClientController extends Controller
         }
     }
 
-    public function verifyConnectAccount($accountId) {
+    public function verifyConnectAccount(Request $request) {
         try {
             $stripe = new StripeClient("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
-            
+            $accountId = $request->connect_account_id;
             $accountSession = $stripe->accountSessions->create([
                 'account' => $accountId, // connected_account_id
                 'components' => [
@@ -1346,6 +1346,30 @@ class ClientController extends Controller
         }
     }
 
+    public function connectAccountVerification(Request $request) {
+        try {
+            $accountId = $request->connect_account_id; 
+            // Fetch the created connected account from Stripe to get status
+            $account = \Stripe\Account::retrieve($accountId);
+
+            if ($account->charges_enabled && $account->payouts_enabled) {
+                $status = 'Verified';
+            } elseif (!$account->charges_enabled && !$account->payouts_enabled) {
+                $status = 'Unverified';
+            } else {
+                $status = 'Pending';
+            }
+
+            $findAccount = ConnectedAccount::where('account_id', $accountId)->first();
+            $findAccount->status = $status;
+            $findAccount->update();
+
+            return sendResponse(true, 200, 'Account Status!', $findAccount, 200);
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+        }
+    }
+
     public function getConnectAccounts(Request $request) {
         try {
             $accounts = ConnectedAccount::whereIn('status', explode(',', $request->status))
@@ -1361,7 +1385,6 @@ class ClientController extends Controller
     public function withdrawalAmount(Request $request)
     {
         try {
-            // Fetch the authenticated client
             $client = Auth::guard('client-api')->user();
 
             // Check if user has sufficient balance
@@ -1376,16 +1399,6 @@ class ClientController extends Controller
             $client->virtual_balance -= $request->amount;
             $client->save();
 
-            // Record transaction
-            $transactionId = str_pad(rand(1, pow(10, 10) - 1), 10, '0', STR_PAD_LEFT);
-
-            $transaction = Transaction::create([
-                'client_id' => $client->id,
-                'transaction_id' => $transactionId,
-                'amount' => $request->amount,
-                'type' => 'withdrawal',
-                'created_at' => now(),
-            ]);
 
             // Get recipient's Stripe account ID
             $recipientAccountId = $request->input('recipient_account_id');
@@ -1404,6 +1417,17 @@ class ClientController extends Controller
 
                 // Commit the transaction if transfer is successful
                 if ($transfer) {
+                    // Record transaction
+                    $transactionId = $transfer->id;
+
+                    $transaction = Transaction::create([
+                        'client_id' => $client->id,
+                        'transaction_id' => $transactionId,
+                        'amount' => $request->amount,
+                        'type' => 'withdrawal',
+                        'created_at' => now(),
+                    ]);
+                    
                     DB::commit();
                     return sendResponse(true, 200, 'Withdrawal successful!', [], 200);
                 } else {

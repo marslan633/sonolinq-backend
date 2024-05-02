@@ -178,8 +178,11 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('read-notifications', [NotificationController::class, 'readNotifications']);
 
     /* Account Creation, Transfers and Transactions History Routes*/
-    Route::post('create-connect-account', [ClientController::class, 'createConnectAccount']);
-    Route::get('verify-connect-account/{account_id}', [ClientController::class, 'verifyConnectAccount']);
+    Route::prefix('connect-account')->group(function () {
+        Route::post('create', [ClientController::class, 'createConnectAccount']);
+        Route::post('verify', [ClientController::class, 'verifyConnectAccount']);
+        Route::post('status', [ClientController::class, 'connectAccountVerification']);
+    });
     Route::get('connect-accounts', [ClientController::class, 'getConnectAccounts']);
     Route::post('withdrawal-amount', [ClientController::class, 'withdrawalAmount']);
     Route::get('transactions', [ClientController::class, 'transactionsHistory']);
