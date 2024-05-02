@@ -1268,7 +1268,7 @@ class ClientController extends Controller
 
     public function createConnectAccount(Request $request) {
         try {
-            Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            Stripe::setApiKey(config('services.stripe.secret'));
             
             // Create connected account
             $account = \Stripe\Account::create([
@@ -1322,7 +1322,7 @@ class ClientController extends Controller
 
     public function verifyConnectAccount(Request $request) {
         try {
-            $stripe = new StripeClient("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            $stripe = new StripeClient(config('services.stripe.secret'));
             $accountId = $request->connect_account_id;
             $accountSession = $stripe->accountSessions->create([
                 'account' => $accountId, // connected_account_id
@@ -1370,11 +1370,25 @@ class ClientController extends Controller
         }
     }
 
-    public function getConnectAccounts(Request $request) {
+    public function getConnectAccounts() {
         try {
-            $accounts = ConnectedAccount::whereIn('status', explode(',', $request->status))
-                ->orderBy('id', 'desc')
+            $id = Auth::guard('client-api')->user()->id;
+            $accounts = ConnectedAccount::where('client_id', $id)->orderBy('id', 'desc')
                 ->get();
+
+            foreach($accounts as $account) {
+                $stripeAccount = \Stripe\Account::retrieve($account->account_id);
+                if ($stripeAccount->charges_enabled && $stripeAccount->payouts_enabled) {
+                    $status = 'Verified';
+                } elseif (!$stripeAccount->charges_enabled && !$stripeAccount->payouts_enabled) {
+                    $status = 'Unverified';
+                } else {
+                    $status = 'Pending';
+                }
+                
+                $account->status = $status;
+                $account->update();
+            }
 
             return sendResponse(true, 200, 'Accounts Fetched Successfully!', $accounts, 200);
         } catch (\Exception $ex) {
@@ -1440,7 +1454,7 @@ class ClientController extends Controller
                 DB::rollback();
                 return sendResponse(false, 200, 'Recipient account is not verified', [], 200);
             }
-        } catch (\Exception $ex) {
+        } catch (\InvalidRequestException $ex) {
             // Rollback the transaction in case of any exception
             DB::rollback();
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
