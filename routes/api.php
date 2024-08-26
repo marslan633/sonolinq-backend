@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Manager\ClientController;
+use App\Http\Controllers\Api\Client\ClientUserController;
 use App\Http\Controllers\Api\Manager\StaffController;
 use App\Http\Controllers\Api\Manager\ServiceCategoryController;
 use App\Http\Controllers\Api\Manager\PackageController;
@@ -17,6 +18,9 @@ use App\Http\Controllers\Api\Manager\TermController;
 use App\Http\Controllers\Api\Manager\SupportTicketController;
 use App\Http\Controllers\Api\Manager\TicketNoteController;
 use App\Http\Controllers\Api\Manager\EmailTemplateController;
+use App\Http\Controllers\Api\Manager\ManagerController;
+use App\Http\Controllers\Api\Client\DoctorController;
+use App\Http\Controllers\Api\Client\SonographerController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
@@ -73,23 +77,19 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'email-template' => EmailTemplateController::class,
     ]);
 
+    Route::get('/dashboard-stats', [ManagerController::class, 'adminStats']); 
+    Route::get('/get-booking-list', [ManagerController::class, 'bookingList']);
+    Route::post('client-chart', [ManagerController::class, 'clientChart']);
+    Route::post('total-earning-chart', [ManagerController::class, 'totalEarningChart']);
+    Route::post('booking-chart', [ManagerController::class, 'bookingChart']);
 
-    // get All booking for admin
-    Route::get('/get-booking-list', [ClientController::class, 'bookingList']); 
-    Route::get('/dashboard-stats', [ClientController::class, 'adminStats']); 
-
-    // Chart API's for Admin
-    Route::post('client-chart', [ClientController::class, 'clientChart']);
-    Route::post('total-earning-chart', [ClientController::class, 'totalEarningChart']);
-    Route::post('booking-chart', [ClientController::class, 'bookingChart']);
-
-    // Reviews Api For Admin
+    /* Defining Reviews Api Routes For Admin */
     Route::get('get-reviews', [ReviewController::class, 'get']);
     Route::delete('delete-review/{id}', [ReviewController::class, 'delete']);
 
-    // Level System Api For Admin
-    Route::get('get-level-system', [ClientController::class, 'getLevelSystem']);
-    Route::patch('update-level-system/{id}', [ClientController::class, 'updateLevelSystem']);
+    /* Defining Level System Api Routes For Admin */
+    Route::get('get-level-system', [ManagerController::class, 'getLevelSystem']);
+    Route::patch('update-level-system/{id}', [ManagerController::class, 'updateLevelSystem']);
 
     /*Defining Manager Notifications Routes*/
     Route::get('notifications', [NotificationController::class, 'notifications']);
@@ -114,7 +114,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     });
 
     /*Defining Supliment Routes for Client*/
-    Route::prefix('client')->controller(ClientController::class)->group(function () {
+    Route::prefix('client')->controller(ClientUserController::class)->group(function () {
         Route::get('statements', 'client_statements');
         Route::get('get-configurations', 'get_configurations');
         Route::post('update-configurations', 'update_configurations');
@@ -125,39 +125,32 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
         'bank-info' => BankInfoController::class,
     ]);
 
-    Route::get('/get-client', [ClientController::class, 'getClient']);
-    Route::patch('/update-client', [ClientController::class, 'updateClient']);
-
-    // Sonographer eligibility check API
-    
-    Route::post('/appointment', [ClientController::class, 'appointment']);
-    Route::get('/get-eligible-sonographer', [ClientController::class, 'getEligibleSonographers']);
-    Route::get('/accept-booking-request/{id}', [ClientController::class, 'acceptBookingRequest']);
-    Route::get('/reject-booking-request/{id}', [ClientController::class, 'rejectBookingRequest']);
-    Route::get('/doctor-cancel-booking/{id}', [ClientController::class, 'doctorCancelBooking']);
-    Route::get('/sonographer-cancel-booking/{id}', [ClientController::class, 'sonographerCancelBooking']);
-
-    Route::get('/get-doctor-bookings', [ClientController::class, 'getDoctorBookings']);
-    
-    Route::get('/validate-token', [ClientController::class, 'validateToken']);
-
+    /* Defining Booking Routes for Doctor */
+    Route::post('/appointment', [DoctorController::class, 'appointment']);
+    Route::get('/get-doctor-bookings', [DoctorController::class, 'getDoctorBookings']);
     // Doctor complete their appointment (booking) in progress route
-    Route::get('/completed-booking-request/{id}', [ClientController::class, 'completedBookingRequest']);
+    Route::get('/completed-booking-request/{id}', [DoctorController::class, 'completedBookingRequest']);
+    Route::get('/doctor-cancel-booking/{id}', [DoctorController::class, 'doctorCancelBooking']);
 
-    Route::patch('/update-booking-status/{id}', [ClientController::class, 'updateBookingStatus']);
+    /* Defining Booking Routes for Sonographer */    
+    Route::get('/get-eligible-sonographer', [SonographerController::class, 'getEligibleSonographers']);
+    Route::get('/accept-booking-request/{id}', [SonographerController::class, 'acceptBookingRequest']);
+    Route::get('/reject-booking-request/{id}', [SonographerController::class, 'rejectBookingRequest']);
+    Route::get('/sonographer-cancel-booking/{id}', [SonographerController::class, 'sonographerCancelBooking']);
 
-    Route::get('/dashboard-stats', [ClientController::class, 'clientStats']); 
+    /* Client's API's */ 
+    Route::get('/dashboard-stats', [ClientUserController::class, 'clientStats']); 
+    Route::post('earning-chart', [ClientUserController::class, 'clientEarningChart']);
+    Route::post('booking-chart', [ClientUserController::class, 'clientBookingChart']);
+    Route::get('/validate-token', [ClientUserController::class, 'validateToken']);
+    Route::patch('/update-booking-status/{id}', [ClientUserController::class, 'updateBookingStatus']);
+    Route::post('direct-booking', [ClientUserController::class, 'directBooking']);
+    Route::patch('/update-client', [ClientUserController::class, 'updateClient']);
+    Route::get('/get-client', [ClientUserController::class, 'getClient']);
 
-    // Chart API's for Admin
-    Route::post('earning-chart', [ClientController::class, 'clientEarningChart']);
-    Route::post('booking-chart', [ClientController::class, 'clientBookingChart']);
-
-    // Reviews Api For Sonographer and Doctor
+    /* Reviews Api For Sonographer and Doctor */ 
     Route::post('create-review', [ReviewController::class, 'store']);
     Route::patch('update-review/{id}', [ReviewController::class, 'update']);
-
-    // If Sonographer and Doctor Direct Book Appointment
-    Route::post('direct-booking', [ClientController::class, 'directBooking']);
 
     Route::post('store-support-ticket', [SupportTicketController::class, 'storeTicket']);
     Route::get('get-support-ticket', [SupportTicketController::class, 'getTicket']);
@@ -194,8 +187,8 @@ Route::post('/send-web-notification', [ClientController::class, 'sendNotificatio
  * **/
 Route::get('/get-services', [ServiceController::class, 'getServices']); 
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
-Route::post('/sonographer-eligibility', [ClientController::class, 'checkEligibility']);
-Route::get('/show-booking/{id}', [ClientController::class, 'showBooking']);
+Route::post('/sonographer-eligibility', [DoctorController::class, 'checkEligibility']);
+Route::get('/show-booking/{id}', [DoctorController::class, 'showBooking']);
 Route::get('/get-faqs', [FaqController::class, 'getFaqs']);
 Route::get('/get-languages', [LanguageController::class, 'getLanguages']);
 Route::get('/get-equipment', [EquipmentController::class, 'getLanguages']);
