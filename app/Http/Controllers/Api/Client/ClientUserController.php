@@ -612,7 +612,7 @@ class ClientUserController extends Controller
     public function directBooking(Request $request) {
         try {
             if($request->input('token')) {
-                Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+                Stripe::setApiKey(config('services.stripe.secret'));
                 try {
                     $charge = Charge::create([
                         'amount' => $request->input('amount') * 100, // Convert amount to cents

@@ -437,7 +437,7 @@ class ClientController extends Controller
             $backFileContents = Storage::get($backFilePath);
 
             // Set your Stripe secret key
-            Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            Stripe::setApiKey(config('services.stripe.secret'));
             // Create connected account
             $account = \Stripe\Account::create([
                 'type' => 'custom',
@@ -549,7 +549,7 @@ class ClientController extends Controller
     public function createAccountSession(Request $request)
     {
         try {
-            $stripe = new StripeClient("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+            $stripe = new StripeClient(config('services.stripe.secret'));
             
             $account_session = $stripe->accountSessions->create([
                 'account' => $request->input('connected_account_id'), // assuming connected_account_id is passed through the request
@@ -572,7 +572,7 @@ class ClientController extends Controller
     
     public function completedBookingRequestStripe($id) {
 // Set your Stripe secret key
-Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+Stripe::setApiKey(config('services.stripe.secret'));
 
     $account = \Stripe\Account::retrieve('acct_1ObeZlD0H0LhSNKm');
 
@@ -760,7 +760,7 @@ if ($payout->status === 'paid') {
 
         
 
-        // Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        // Stripe::setApiKey(config('services.stripe.secret'));
         // // Get the bank account details from the request
         // $bankAccountDetails = [
         //     'account_number' => '000123456789',
@@ -797,7 +797,7 @@ if ($payout->status === 'paid') {
 
     private function transferToBankAccount($bankDetails, $transferAmount)
     {
-        Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        Stripe::setApiKey(config('services.stripe.secret'));
         try {
             // Create a transfer
             $transfer = Transfer::create([

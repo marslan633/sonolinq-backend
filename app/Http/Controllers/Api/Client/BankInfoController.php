@@ -105,7 +105,7 @@ class BankInfoController extends Controller
 
     private function createStripeToken($bankInfo)
     {
-        Stripe::setApiKey("sk_test_51Nu9mBDJ9oRgyjebvyDL1NNHOBjkrZr5iViQNeKjSPWcAG801TmBkQo2mKvcsYDnviyRDFlCU0vF5I85jUPpg01f00p1BpqPeH");
+        Stripe::setApiKey(config('services.stripe.secret'));
 
         $token = \Stripe\Token::create([
             'bank_account' => [
