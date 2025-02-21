@@ -46,8 +46,8 @@ class ServiceCategoryController extends Controller
             $category->status = true;
             $category->price = $request->price;
             $category->save();
-            
-            /*Retruing Response*/   
+
+            /*Retruing Response*/
             return sendResponse(true, 200, 'Service Category Created Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -83,7 +83,7 @@ class ServiceCategoryController extends Controller
         try {
             $category = ServiceCategory::find($id);
             $category->update($request->all());
-            
+
             return sendResponse(true, 200, 'Service Category Updated Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -110,7 +110,6 @@ class ServiceCategoryController extends Controller
         try {
             // $categories = ServiceCategory::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
             $categories = ServiceCategory::whereIn('status', explode(',', $request->status))
-                ->whereHas('services')
                 ->orderBy('id', 'desc')
                 ->get();
 
