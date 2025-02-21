@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             'status' => true,
             'remember_token' => Str::random(10),
         ]);
-        
+
         $this->call([
             LevelSystemSeeder::class,
             ClientCompanySeeder::class,
@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             SonographerTypeSeeder::class,
             LanguageSeeder::class,
             EmailTemplateSeeder::class,
+            SonogramSeeder::class,
         ]);
     }
 }
