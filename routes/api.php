@@ -189,6 +189,7 @@ Route::post('/send-web-notification', [ClientController::class, 'sendNotificatio
  * **/
 Route::get('/get-services', [ServiceController::class, 'getServices']);
 Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']);
+Route::get('/get-sonograms', [SonogramController::class, 'getSonogram']);
 Route::post('/sonographer-eligibility', [DoctorController::class, 'checkEligibility']);
 Route::get('/show-booking/{id}', [DoctorController::class, 'showBooking']);
 Route::get('/get-faqs', [FaqController::class, 'getFaqs']);
