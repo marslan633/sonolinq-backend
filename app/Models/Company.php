@@ -34,14 +34,8 @@ class Company extends Model
 
     public function type_of_sonograms()
     {
-        return $this->belongsToMany(Service::class);
+        return $this->belongsToMany(Sonogram::class);
     }
-
-    public function type_of_sonograms()
-{
-    return $this->belongsToMany(Sonogram::class);
-}
-
 
     public function client() {
         return $this->hasOne(Client::class, 'id', 'client_id');
