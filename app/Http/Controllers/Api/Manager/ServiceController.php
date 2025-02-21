@@ -25,11 +25,6 @@ class ServiceController extends Controller
             $query->whereIn('status', explode(',', $request->status));
         }
 
-        // Filter by type if provided
-        if ($request->has('type') && !empty($request->type)) {
-            $query->whereIn('type', explode(',', $request->type));
-        }
-
         $services = $query->orderBy('id', 'desc')->get();
 
         return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
@@ -134,11 +129,6 @@ class ServiceController extends Controller
             // Filter by status if provided
             if ($request->has('status') && !empty($request->status)) {
                 $query->whereIn('status', explode(',', $request->status));
-            }
-
-            // Filter by type if provided
-            if ($request->has('type') && !empty($request->type)) {
-                $query->whereIn('type', explode(',', $request->type));
             }
 
             $services = $query->orderBy('id', 'desc')->get();

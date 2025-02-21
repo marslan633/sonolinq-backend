@@ -27,8 +27,7 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => ['required'],
             'price' => ['required'],
-            'status' => ['boolean'],
-            'type' => ['required', Rule::in(['services', 'sonograms'])] // New field added
+            'status' => ['boolean']
         ];
     }
 
