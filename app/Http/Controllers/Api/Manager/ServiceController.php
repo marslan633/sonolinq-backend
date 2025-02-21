@@ -16,14 +16,27 @@ class ServiceController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        try {
-            $services = Service::with('category')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
-            return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+{
+    try {
+        $query = Service::query();
+
+        // Filter by status if provided
+        if ($request->has('status') && !empty($request->status)) {
+            $query->whereIn('status', explode(',', $request->status));
         }
+
+        // Filter by type if provided
+        if ($request->has('type') && !empty($request->type)) {
+            $query->whereIn('type', explode(',', $request->type));
+        }
+
+        $services = $query->orderBy('id', 'desc')->get();
+
+        return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
+    } catch (\Exception $ex) {
+        return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
     }
+}
 
     /**
      * Show the form for creating a new resource.
@@ -37,17 +50,17 @@ class ServiceController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreProductRequest $request)
-    {     
+    {
         try {
             $service = $request->all();
             $service['user_id'] =  Auth::guard('user-api')->user()->id;
             $service['status'] = true;
             $service['category_id'] = $request->category;
-            
+
             $service = Service::create($service);
-            
+
             $objService = Service::where('id', $service->id)->with('category')->first();
-            /*Retruing Response*/   
+            /*Retruing Response*/
             return sendResponse(true, 200, 'Service Created Successfully!', $objService, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -85,13 +98,13 @@ class ServiceController extends Controller
             $service = $request->all();
             $service['user_id'] =  Auth::guard('user-api')->user()->id;
             if($request->category) {
-                $service['category_id'] = $request->category;  
+                $service['category_id'] = $request->category;
             }
             if($request->status) {
                 $service['status'] = filter_var($service['status'], FILTER_VALIDATE_BOOLEAN);
             }
             $object->update($service);
-            
+
             $objService = Service::where('id', $object->id)->with('category')->first();
             return sendResponse(true, 200, 'Service Updated Successfully!', $objService, 200);
         } catch (\Exception $ex) {
@@ -115,8 +128,23 @@ class ServiceController extends Controller
 
     public function getServices(Request $request) {
         try {
-            $services = Service::with('category')->whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
+
+           $query = Service::with('category'); // Include category relationship
+
+            // Filter by status if provided
+            if ($request->has('status') && !empty($request->status)) {
+                $query->whereIn('status', explode(',', $request->status));
+            }
+
+            // Filter by type if provided
+            if ($request->has('type') && !empty($request->type)) {
+                $query->whereIn('type', explode(',', $request->type));
+            }
+
+            $services = $query->orderBy('id', 'desc')->get();
+
             return sendResponse(true, 200, 'Services Fetched Successfully!', $services, 200);
+
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }

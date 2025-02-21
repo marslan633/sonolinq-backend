@@ -26,8 +26,7 @@ class UpdateCategoryRequest extends FormRequest
     {
         return [
             'name' => ['string', 'max:255', Rule::unique('service_categories')->ignore($this->id)],
-            'status' => ['boolean'],
-             'type' => ['required', Rule::in(['services', 'sonograms'])] // New field added
+            'status' => ['boolean']
         ];
     }
 

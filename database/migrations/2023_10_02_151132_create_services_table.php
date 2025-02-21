@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->string('name');
-            $table->bigInteger('price');
+            $table->string('price')->nullable();
+            $table->enum('type', ['services', 'sonograms']); // Example values
             $table->boolean('status');
             $table->timestamps();
         });
