@@ -27,7 +27,8 @@ class StoreCategoryRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('service_categories')],
-            'status' => ['boolean']
+            'status' => ['boolean'],
+            'type' => ['required', Rule::in(['services', 'sonograms'])] // New field added
         ];
     }
 

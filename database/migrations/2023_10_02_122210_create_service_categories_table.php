@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->boolean('status');
             $table->string('price')->nullable();
+           $table->enum('type', ['services', 'sonograms'])->after('price'); // Example values
             $table->timestamps();
         });
     }

@@ -16,14 +16,28 @@ class ServiceCategoryController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        try {
-            $categories = ServiceCategory::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
-            return sendResponse(true, 200, 'Service Categories Fetched Successfully!', $categories, 200);
-        } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+{
+    try {
+        $query = ServiceCategory::query();
+
+        // Filter by status if provided
+        if ($request->has('status') && !empty($request->status)) {
+            $query->whereIn('status', explode(',', $request->status));
         }
+
+        // Filter by type if provided
+        if ($request->has('type') && !empty($request->type)) {
+            $query->whereIn('type', explode(',', $request->type));
+        }
+
+        $categories = $query->orderBy('id', 'desc')->get();
+
+        return sendResponse(true, 200, 'Service Categories Fetched Successfully!', $categories, 200);
+    } catch (\Exception $ex) {
+        return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
     }
+}
+
 
     /**
      * Show the form for creating a new resource.
@@ -45,9 +59,10 @@ class ServiceCategoryController extends Controller
             $category->name = $request->name;
             $category->status = true;
             $category->price = $request->price;
+            $category->type = $request->type;
             $category->save();
-            
-            /*Retruing Response*/   
+
+            /*Retruing Response*/
             return sendResponse(true, 200, 'Service Category Created Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -83,7 +98,7 @@ class ServiceCategoryController extends Controller
         try {
             $category = ServiceCategory::find($id);
             $category->update($request->all());
-            
+
             return sendResponse(true, 200, 'Service Category Updated Successfully!', $category, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -109,8 +124,8 @@ class ServiceCategoryController extends Controller
     public function getServiceCategories(Request $request) {
         try {
             // $categories = ServiceCategory::whereIn('status', explode(',', $request->status))->orderBy('id', 'desc')->get();
-            $categories = ServiceCategory::whereIn('status', explode(',', $request->status))
-                ->whereHas('services')
+           $categories = ServiceCategory::whereIn('status', explode(',', $request->status))
+                ->where('type', 'services') // Added condition for type = 'services'
                 ->orderBy('id', 'desc')
                 ->get();
 
