@@ -96,7 +96,7 @@ class ClientController extends Controller
                 $client->company->update($company);
             }
 
-            if ($request->status === 'Active' && $previousStatus === 'Pending' && $client->role == 'Sonographer') {
+            if ($request->status === 'Active' && $previousStatus === 'Pending') {
                 // Send Welcome Email
                 $emailTemplate = EmailTemplate::where('type', 'welcome')->first();
 
