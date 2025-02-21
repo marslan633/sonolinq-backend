@@ -35,7 +35,7 @@ class AuthController extends Controller
                 if(!$user->status && $type == 'user') return sendResponse(false, 401, 'Your account is not active. please contact support.', [], 200);
                 /*Checking Client Email Verificatoin*/
                 if($user->is_verified == false && $type == 'client') return sendResponse(false, 401, 'Your email is not verified. Please check your email.', [], 200);
-                
+
                 /*Checking Client Status*/
                 if($user->status != 'Active' && $type == 'client') {
                     if ($user->status == 'Suspended') {
@@ -44,12 +44,12 @@ class AuthController extends Controller
                             $user->load('level_system');
                         }
                         $accessToken =  $user->createToken('Personal Access Token', [$type])->accessToken;
-                        return sendResponse(true, 200, 'Login Successfully!', ['user' => $user, 'token' => $accessToken], 200);                                         
+                        return sendResponse(true, 200, 'Login Successfully!', ['user' => $user, 'token' => $accessToken], 200);
                     } else {
                         return sendResponse(false, 401, $user->status == 'Pending' ? 'Your account is under review we will contact you with an approval email.' : 'Your account is not active. please contact support.', [], 200);
                     }
                 }
-                
+
                 // Check if the user type is 'client' and then load the relationship
                 if ($type == 'client') {
                     $user->load('level_system');
@@ -94,7 +94,7 @@ class AuthController extends Controller
             $user->update();
 
             // $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
-            
+
             // $details = [
             //     'subject' => $emailTemplate->subject,
             //     'body'=> $emailTemplate->body,
@@ -108,7 +108,7 @@ class AuthController extends Controller
             // Mail::to($request->email)->send(new ForgotPasswordMail($details));
 
             $emailTemplate = EmailTemplate::where('type', 'forgot-password')->first();
-            if($emailTemplate) { 
+            if($emailTemplate) {
                 $details = [
                     'subject' => $emailTemplate->subject,
                     'body'=> $emailTemplate->body,
@@ -151,7 +151,7 @@ class AuthController extends Controller
 
             // Send Welcome Email
             $emailTemplate = EmailTemplate::where('type', 'welcome')->first();
-            
+
             if($emailTemplate) {
                 $details = [
                     'subject' => $emailTemplate->subject,
@@ -176,7 +176,7 @@ class AuthController extends Controller
     public function register(RegisterClientRequest $request){
         try{
             /*Creating Client*/
-            
+
             $client = Client::create($request->all());
             if ($request->hasFile('non_solicitation_agreement')) {
                 $client['non_solicitation_agreement'] = $request->file('non_solicitation_agreement')->store('companyImages', 'public');
@@ -184,21 +184,21 @@ class AuthController extends Controller
             }
             /*Creating Company*/
             $company = $request->all();
-        
 
-            if ($request->hasFile('personal_director_id')) { 
+
+            if ($request->hasFile('personal_director_id')) {
                 $company['personal_director_id'] = $request->file('personal_director_id')->store('companyImages', 'public');
             }
-            if ($request->hasFile('prove_of_address')) { 
+            if ($request->hasFile('prove_of_address')) {
                 $company['prove_of_address'] = $request->file('prove_of_address')->store('companyImages', 'public');
             }
-            
+
             $client->company()->create($company);
 
             $clientId = $client->id;
             $companyId = $client->company->id;
             $totalRegNo = $request->total_reg_no;
-            
+
             if(isset($request->total_reg_no)) {
                 for ($i = 1; $i <= $totalRegNo; $i++) {
 
@@ -207,16 +207,16 @@ class AuthController extends Controller
                     $registry->company_id = $companyId;
 
                     $registry->register_no = $request->{"register_no_$i"};
-                    if ($request->hasFile("reg_no_letter_$i")) { 
+                    if ($request->hasFile("reg_no_letter_$i")) {
                         $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
                     }
                     $registry->save();
-                }           
+                }
             }
 
-            if (isset($request->type_of_services)) { 
+            if (isset($request->type_of_sonograms)) {
                 $company = $client->company;
-                $company->type_of_services()->attach(json_decode($request->type_of_services));
+                $company->type_of_sonograms()->attach(json_decode($request->type_of_sonograms));
             }
             /*Creating Address*/
             $client->addresses()->create((array)json_decode($request->personal_address));
@@ -239,7 +239,7 @@ class AuthController extends Controller
 
             // Send Dynamic Verification Email
             $emailTemplate = EmailTemplate::where('type', 'verification')->first();
-            if($emailTemplate) { 
+            if($emailTemplate) {
                 $details = [
                     'subject' => $emailTemplate->subject,
                     'body'=> $emailTemplate->body,

@@ -38,7 +38,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         try {
-            $staff = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')
+            $staff = Client::with('company.type_of_sonograms', 'company.registries', 'addresses', 'package')
                 ->whereIn('status', explode(',', $request->status))
                 ->orderBy('id', 'desc')
                 ->get();
@@ -54,9 +54,9 @@ class ClientController extends Controller
      */
     public function show(String $id)
     {
-        
+
         try {
-            $client = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')->find($id);
+            $client = Client::with('company.type_of_sonograms', 'company.registries', 'addresses', 'package')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -72,7 +72,7 @@ class ClientController extends Controller
             /*Creating Client*/
             $client = Client::find($id);
             $previousStatus = $client->status;
-            
+
             if ($request->hasFile('non_solicitation_agreement')) {
                 !is_null($client->non_solicitation_agreement) && Storage::disk('public')->delete($client->non_solicitation_agreement);
             }
@@ -99,7 +99,7 @@ class ClientController extends Controller
             if ($request->status === 'Active' && $previousStatus === 'Pending' && $client->role == 'Sonographer') {
                 // Send Welcome Email
                 $emailTemplate = EmailTemplate::where('type', 'welcome')->first();
-                
+
                 if($emailTemplate) {
                     $details = [
                         'subject' => $emailTemplate->subject,
@@ -112,16 +112,16 @@ class ClientController extends Controller
                 }
             }
 
-            // if (isset($request->type_of_services)) { 
+            // if (isset($request->type_of_sonograms)) {
             //     $company = $client->company;
-            //     $company->type_of_services()->detach();
-            //     $company->type_of_services()->attach($request->type_of_services);
+            //     $company->type_of_sonograms()->detach();
+            //     $company->type_of_sonograms()->attach($request->type_of_sonograms);
             // }
 
             $clientId = $client->id;
             $companyId = $client->company->id;
             $totalRegNo = $request->total_reg_no;
-            
+
             if(isset($request->total_reg_no)) {
                 for ($i = 1; $i <= $totalRegNo; $i++) {
 
@@ -130,16 +130,16 @@ class ClientController extends Controller
                     $registry->company_id = $companyId;
 
                     $registry->register_no = $request->{"register_no_$i"};
-                    if ($request->hasFile("reg_no_letter_$i")) { 
+                    if ($request->hasFile("reg_no_letter_$i")) {
                         $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
                     }
                     $registry->save();
-                }           
+                }
             }
 
             if(isset($request->update_reg_arr)) {
                 $updateRegArr = json_decode($request->update_reg_arr);
-                
+
                 foreach($updateRegArr as $regId){
                     $findReg = Registry::find($regId);
                     if($findReg) {
@@ -147,7 +147,7 @@ class ClientController extends Controller
                         if($request->{"update_register_no_$regtryID"}) {
                             $findReg->register_no = $request->{"update_register_no_$regtryID"};
                         }
-                                    
+
                         $regNoLetterKey = "update_reg_no_letter_$regtryID";
                         if ($request->hasFile($regNoLetterKey)) {
                             $findReg->reg_no_letter = $request->file($regNoLetterKey)->store('companyImages', 'public');
@@ -157,30 +157,30 @@ class ClientController extends Controller
                         }
                         $findReg->update();
                     }
-                } 
-            }
-
-            if (isset($request->type_of_services)) {
-                $company = $client->company;
-                $company->type_of_services()->detach();
-
-                $serviceIds = json_decode($request->type_of_services, true);
-
-                foreach ($serviceIds as $serviceId) {
-                    $company->type_of_services()->attach($serviceId);
                 }
             }
-            
+
+            if (isset($request->type_of_sonograms)) {
+                $company = $client->company;
+                $company->type_of_sonograms()->detach();
+
+                $serviceIds = json_decode($request->type_of_sonograms, true);
+
+                foreach ($serviceIds as $serviceId) {
+                    $company->type_of_sonograms()->attach($serviceId);
+                }
+            }
+
             /*Creating Address*/
             if (isset($request->personal_address)) {
                 $client->addresses()->update((array)json_decode($request->personal_address));
             }
 
-            
+
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services', 'company.registries', 'package')->find($id);
+            $client = Client::with('company.type_of_sonograms', 'company.registries', 'package')->find($id);
 
             if ($client && in_array($client->status, ['Deactive', 'Rejected', 'Suspended'])) {
                 // Send email to the client
@@ -224,7 +224,7 @@ class ClientController extends Controller
     public function createConnectAccount(Request $request) {
         try {
             Stripe::setApiKey(config('services.stripe.secret'));
-            
+
             // Create connected account
             $account = \Stripe\Account::create([
                 'type' => 'custom',
@@ -243,17 +243,17 @@ class ClientController extends Controller
                         'month' => $request->dob_month, // Required: month of birth
                         'year' => $request->dob_year, // Required: year of birth
                     ],
-                    
+
                 ],
                 'tos_acceptance' => [
                     'date' => time(), // Required: current timestamp
                     'ip' => $request->ip(), // Required: IP address of the account holder
                 ],
             ]);
-            
+
             // Determine the status based on different fields in the Stripe account object
             $status = '';
-            
+
             if ($account->charges_enabled && $account->payouts_enabled) {
                 $status = 'Verified';
             } elseif (!$account->charges_enabled && !$account->payouts_enabled) {
@@ -268,7 +268,7 @@ class ClientController extends Controller
             $connectedAccount->status = $status;
             $connectedAccount->client_id = Auth::guard('client-api')->user()->id;
             $connectedAccount->save();
-            
+
             return sendResponse(true, 200, 'Connect Account Created, Please verify your account!', $account, 200);
         } catch (InvalidRequestException $e) {
             return sendResponse(false, 500, 'Internal Server Error', $e->getMessage(), 200);
@@ -294,7 +294,7 @@ class ClientController extends Controller
             ];
 
             return sendResponse(true, 200, 'Account Session Generate For Account Verification', $data, 200);
-            
+
         } catch (Exception $e) {
             error_log("An error occurred when calling the Stripe API to create an account session: {$e->getMessage()}");
             return response()->json(['error' => $e->getMessage()], 500);
@@ -303,7 +303,7 @@ class ClientController extends Controller
 
     public function connectAccountVerification(Request $request) {
         try {
-            $accountId = $request->connect_account_id; 
+            $accountId = $request->connect_account_id;
             // Fetch the created connected account from Stripe to get status
             $account = \Stripe\Account::retrieve($accountId);
 
@@ -340,7 +340,7 @@ class ClientController extends Controller
                 } else {
                     $status = 'Pending';
                 }
-                
+
                 $account->status = $status;
                 $account->update();
             }
@@ -396,7 +396,7 @@ class ClientController extends Controller
                         'type' => 'withdrawal',
                         'created_at' => now(),
                     ]);
-                    
+
                     DB::commit();
                     return sendResponse(true, 200, 'Withdrawal successful!', [], 200);
                 } else {
@@ -427,7 +427,7 @@ class ClientController extends Controller
     }
 
     /**
-     * Stripe Connected Account Standard API's 
+     * Stripe Connected Account Standard API's
      */
     public function createStripeConnectedAccount(Request $request) {
         try {
@@ -550,7 +550,7 @@ class ClientController extends Controller
     {
         try {
             $stripe = new StripeClient(config('services.stripe.secret'));
-            
+
             $account_session = $stripe->accountSessions->create([
                 'account' => $request->input('connected_account_id'), // assuming connected_account_id is passed through the request
                 'components' => [
@@ -569,7 +569,7 @@ class ClientController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    
+
     public function completedBookingRequestStripe($id) {
 // Set your Stripe secret key
 Stripe::setApiKey(config('services.stripe.secret'));
@@ -593,9 +593,9 @@ Stripe::setApiKey(config('services.stripe.secret'));
     return $transfer;
 
 
-    
 
-    
+
+
 try {
 $account = \Stripe\Account::create([
         'type' => 'custom',
@@ -610,7 +610,7 @@ $account = \Stripe\Account::create([
             'ip' => $_SERVER['REMOTE_ADDR'],
         ],
     ]);
-    
+
     $connected_account_id = $account->id;
 
     // Create a bank account token using the connected account's bank account details
@@ -641,7 +641,7 @@ $account = \Stripe\Account::create([
     //     'external_account' => $bank_account_token->id,
     // ]);
 
-    
+
 
     // Attach the bank account token to the connected account
     $external_account = \Stripe\Account::createExternalAccount(
@@ -652,7 +652,7 @@ $account = \Stripe\Account::create([
     );
 
 
-    
+
     // Access the bank account ID
     $bankAccountId = $external_account->id;
 
@@ -664,7 +664,7 @@ $account = \Stripe\Account::create([
     ]);
 
     return $transfer;
-   
+
 
 
 
@@ -681,19 +681,19 @@ $account = \Stripe\Account::create([
 
 
     $customer = \Stripe\Customer::create([
-        'email' => 'customer@example.com', 
+        'email' => 'customer@example.com',
         'description' => 'Customer description',
     ]);
    $customer_id = $customer->id;
-   
+
     // Create a bank account token using the customer's bank account details
     $bank_account_token = \Stripe\Token::create([
         'bank_account' => [
-            'country' => 'US', 
+            'country' => 'US',
             'currency' => 'usd',
-            'account_holder_name' => 'John Doe', 
-            'account_holder_type' => 'individual', 
-            'routing_number' => '110000000', 
+            'account_holder_name' => 'John Doe',
+            'account_holder_type' => 'individual',
+            'routing_number' => '110000000',
             'account_number' => '000123456789',
         ],
     ]);
@@ -711,7 +711,7 @@ $account = \Stripe\Account::create([
 
     return $transfer;
 
-    
+
 } catch (\Stripe\Exception\ApiErrorException $e) {
     // Handle API errors
     return $e->getMessage();
@@ -758,7 +758,7 @@ if ($payout->status === 'paid') {
     return "Payout failed: " . $payout->failure_message;
 }
 
-        
+
 
         // Stripe::setApiKey(config('services.stripe.secret'));
         // // Get the bank account details from the request
@@ -812,7 +812,7 @@ if ($payout->status === 'paid') {
         }
 
         // $customerID = $bankDetails->stripe_token; // Replace with your actual customer ID
-        // $customer = \Stripe\Customer::retrieve($customerID);                                                
+        // $customer = \Stripe\Customer::retrieve($customerID);
 
         // // Create a transfer to the bank account associated with the token
         // $transfer = Transfer::create([
@@ -823,7 +823,7 @@ if ($payout->status === 'paid') {
         //     'destination' => $customer->default_source,
         //     'description' => 'Bank transfer from SonoLinq',
         // ]);
-    
+
         // return $transfer;
     }
     // My xhanges in process working

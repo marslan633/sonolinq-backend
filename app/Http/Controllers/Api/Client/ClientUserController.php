@@ -28,7 +28,7 @@ class ClientUserController extends Controller
             $rejectedBooking = Booking::where($bookingType, $client->id)->where('status', 'Rejected')->count();
             $totalEarning = Booking::where($bookingType, $client->id)->where('status', 'Completed')->sum('charge_amount');
             $expectedEarning = Booking::where($bookingType, $client->id)->where('status', 'Active')->sum('charge_amount');
-            
+
             $stats = [
                 'activeBooking' => $activeBooking,
                 'deactiveBooking' => $deactiveBooking,
@@ -36,7 +36,7 @@ class ClientUserController extends Controller
                 'deliveredBooking' => $deliveredBooking,
                 'completedBooking' => $completedBooking,
                 'rejectedBooking' => $rejectedBooking,
-                'totalEarning'=> $totalEarning, 
+                'totalEarning'=> $totalEarning,
                 'expectedEarning' => $expectedEarning,
             ];
 
@@ -45,14 +45,14 @@ class ClientUserController extends Controller
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
-    
+
     /**
     * Chart API for client
     */
-    public function clientEarningChart(Request $request) 
+    public function clientEarningChart(Request $request)
     {
         $user =  Auth::guard('client-api')->user();
-        
+
         if ($request->parameter == "Today") {
             $today_date = Carbon::now()->toDateString();
 
@@ -132,7 +132,7 @@ class ClientUserController extends Controller
                 );
 
                 return sendResponse(true, 200, 'Charts result.', $dataArray, 200);
-        }    
+        }
 
         if ($request->parameter == "Monthly") {
             $start_of_month = Carbon::now()->startOfMonth();
@@ -299,7 +299,7 @@ class ClientUserController extends Controller
 
             return sendResponse(true, 200, 'Charts result.', $dataArray, 200);
         }
-        
+
         if ($request->parameter == "Weekly") {
             $start_of_week = Carbon::now()->subDays(6);
             $end_of_week = Carbon::today()->endOfWeek();
@@ -511,11 +511,11 @@ class ClientUserController extends Controller
             if ($request->status == 'Completed') {
                 $booking->complete_date = $currentDateTime;
             }
-            
+
             $booking->save();
 
             // Send Booking Delivered Email to Doctor
-            if ($request->status == 'Delivered') {  
+            if ($request->status == 'Delivered') {
                 $emailTemplate = EmailTemplate::where('type', 'booking-deliver')->first();
                 if($emailTemplate) {
                     $doctorDetails = $booking->load('doctor');
@@ -526,7 +526,7 @@ class ClientUserController extends Controller
                         'full_name' => $doctorDetails->doctor['full_name']
                     ];
 
-                    Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+                    Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details));
                 }
 
                 /* Send Booking Delivered Notification to Doctor */
@@ -545,7 +545,7 @@ class ClientUserController extends Controller
                     $notification->module_name = $module_name;
                     $notification->client_id = $doctor_id;
                     $notification->save();
-                       
+
                     $count = NotificationHistory::where('client_id', $doctor_id)->where('is_read', false)->count();
                     $this->sendNotification($tokens, $title, $body, $count);
                 }
@@ -553,7 +553,7 @@ class ClientUserController extends Controller
 
             // Send Booking Completed Email to Sonographer
             if ($request->status == 'Completed') {
-                
+
                 $emailTemplate = EmailTemplate::where('type', 'booking-complete')->first();
                 if($emailTemplate) {
                     $sonographerDetails = $booking->load('sonographer');
@@ -564,9 +564,9 @@ class ClientUserController extends Controller
                         'full_name' => $sonographerDetails->sonographer['full_name']
                     ];
 
-                    Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details)); 
+                    Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details));
                 }
-                
+
                 /* Send Booking Completed Notification to Sonographer */
                 $tokens = [$booking->sonographer['device_token']];
                 if($tokens) {
@@ -575,7 +575,7 @@ class ClientUserController extends Controller
                     $sonographer_id = $booking->sonographer['id'];
                     $module_id = $booking->id;
                     $module_name = "Booking Completed";
-                            
+
                     $notification = new NotificationHistory();
                     $notification->title = $title;
                     $notification->body = $body;
@@ -599,7 +599,7 @@ class ClientUserController extends Controller
                     'doctor'
                 ])
                 ->first();
-            
+
             return sendResponse(true, 200, 'Booking Status Update Successfully!', $bookingObj, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
@@ -627,7 +627,7 @@ class ClientUserController extends Controller
             }
 
             foreach ($request->reservations as $reservationData) {
-                
+
                 // Booking will create on the base of reservations
                 $client_id = Auth::guard('client-api')->user()->id;
 
@@ -672,13 +672,13 @@ class ClientUserController extends Controller
                 $reservation->serviceCategories()->attach($reservationData['service_category_id']);
                 $reservation->services()->attach($reservationData['service_id']);
             }
-            
+
             return sendResponse(true, 200, 'Appointment Book Successfully!', $booking, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
         }
     }
-    
+
     /**
     * Get & Update Client Details API.
     */
@@ -710,15 +710,15 @@ class ClientUserController extends Controller
                 $client->company->update($company);
             }
 
-            // if (isset($request->type_of_services)) { 
+            // if (isset($request->type_of_sonograms)) {
             //     $company = $client->company;
-            //     $company->type_of_services()->detach();
-            //     $company->type_of_services()->attach($request->type_of_services);
+            //     $company->type_of_sonograms()->detach();
+            //     $company->type_of_sonograms()->attach($request->type_of_sonograms);
             // }
             $clientId = $client->id;
             $companyId = $client->company->id;
             $totalRegNo = $request->total_reg_no;
-            
+
             if(isset($request->total_reg_no)) {
                 for ($i = 1; $i <= $totalRegNo; $i++) {
 
@@ -727,16 +727,16 @@ class ClientUserController extends Controller
                     $registry->company_id = $companyId;
 
                     $registry->register_no = $request->{"register_no_$i"};
-                    if ($request->hasFile("reg_no_letter_$i")) { 
+                    if ($request->hasFile("reg_no_letter_$i")) {
                         $registry['reg_no_letter'] = $request->file("reg_no_letter_$i")->store('companyImages', 'public');
                     }
                     $registry->save();
-                }           
+                }
             }
 
             if(isset($request->update_reg_arr)) {
                 $updateRegArr = json_decode($request->update_reg_arr);
-                
+
                 foreach($updateRegArr as $regId){
                     $findReg = Registry::find($regId);
                     if($findReg) {
@@ -744,7 +744,7 @@ class ClientUserController extends Controller
                         if($request->{"update_register_no_$regtryID"}) {
                             $findReg->register_no = $request->{"update_register_no_$regtryID"};
                         }
-                                    
+
                         $regNoLetterKey = "update_reg_no_letter_$regtryID";
                         if ($request->hasFile($regNoLetterKey)) {
                             $findReg->reg_no_letter = $request->file($regNoLetterKey)->store('companyImages', 'public');
@@ -754,30 +754,30 @@ class ClientUserController extends Controller
                         }
                         $findReg->update();
                     }
-                } 
-            }
-
-            if (isset($request->type_of_services)) {
-                $company = $client->company;
-                $company->type_of_services()->detach();
-
-                $serviceIds = json_decode($request->type_of_services, true);
-
-                foreach ($serviceIds as $serviceId) {
-                    $company->type_of_services()->attach($serviceId);
                 }
             }
-            
+
+            if (isset($request->type_of_sonograms)) {
+                $company = $client->company;
+                $company->type_of_sonograms()->detach();
+
+                $serviceIds = json_decode($request->type_of_sonograms, true);
+
+                foreach ($serviceIds as $serviceId) {
+                    $company->type_of_sonograms()->attach($serviceId);
+                }
+            }
+
             /*Creating Address*/
             if (isset($request->personal_address)) {
                 $client->addresses()->update((array)json_decode($request->personal_address));
             }
 
-            
+
             // if (isset($request->parcel_return_address)) {
             //     $client->addresses()->create((array)json_decode($request->parcel_return_address));
             // }
-            $client = Client::with('company.type_of_services', 'company.registries', 'package')->find($id);
+            $client = Client::with('company.type_of_sonograms', 'company.registries', 'package')->find($id);
 
             return sendResponse(true, 200, 'Client Updated Successfully!', $client, 200);
         } catch (\Exception $ex) {
@@ -785,10 +785,10 @@ class ClientUserController extends Controller
         }
     }
 
-    public function getClient() { 
+    public function getClient() {
         try {
             $id =  Auth::guard('client-api')->user()->id;
-            $client = Client::with('company.type_of_services', 'company.registries', 'addresses', 'package')->find($id);
+            $client = Client::with('company.type_of_sonograms', 'company.registries', 'addresses', 'package')->find($id);
             return sendResponse(true, 200, 'Client Fetched Successfully!', $client, 200);
         } catch (\Exception $ex) {
             return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);

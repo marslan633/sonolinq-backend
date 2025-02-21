@@ -11,7 +11,7 @@ class Company extends Model
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id', '_token', '_method'];
-    
+
     protected $fillable = [
         'client_id',
         'company_name',
@@ -32,10 +32,15 @@ class Company extends Model
     ];
 
 
-    public function type_of_services()
+    public function type_of_sonograms()
     {
         return $this->belongsToMany(Service::class);
-    }  
+    }
+
+    public function type_of_sonograms()
+{
+    return $this->belongsToMany(Sonogram::class);
+}
 
 
     public function client() {

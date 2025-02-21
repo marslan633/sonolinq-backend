@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Manager\StaffController;
 use App\Http\Controllers\Api\Manager\ServiceCategoryController;
 use App\Http\Controllers\Api\Manager\PackageController;
 use App\Http\Controllers\Api\Manager\ServiceController;
+use App\Http\Controllers\Api\Manager\SonogramController;
 use App\Http\Controllers\Api\Client\BankInfoController;
 use App\Http\Controllers\Api\Manager\FaqController;
 use App\Http\Controllers\Api\Manager\LanguageController;
@@ -75,9 +76,10 @@ Route::group(['prefix' => 'manager', 'middleware' => ['auth:user-api', 'scopes:u
         'support-ticket' => SupportTicketController::class,
         'ticket-note' => TicketNoteController::class,
         'email-template' => EmailTemplateController::class,
+        'sonogram' => SonogramController::class,
     ]);
 
-    Route::get('/dashboard-stats', [ManagerController::class, 'adminStats']); 
+    Route::get('/dashboard-stats', [ManagerController::class, 'adminStats']);
     Route::get('/get-booking-list', [ManagerController::class, 'bookingList']);
     Route::post('client-chart', [ManagerController::class, 'clientChart']);
     Route::post('total-earning-chart', [ManagerController::class, 'totalEarningChart']);
@@ -121,7 +123,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     });
 
 
-    Route::apiResources([     
+    Route::apiResources([
         'bank-info' => BankInfoController::class,
     ]);
 
@@ -132,14 +134,14 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('/completed-booking-request/{id}', [DoctorController::class, 'completedBookingRequest']);
     Route::get('/doctor-cancel-booking/{id}', [DoctorController::class, 'doctorCancelBooking']);
 
-    /* Defining Booking Routes for Sonographer */    
+    /* Defining Booking Routes for Sonographer */
     Route::get('/get-eligible-sonographer', [SonographerController::class, 'getEligibleSonographers']);
     Route::get('/accept-booking-request/{id}', [SonographerController::class, 'acceptBookingRequest']);
     Route::get('/reject-booking-request/{id}', [SonographerController::class, 'rejectBookingRequest']);
     Route::get('/sonographer-cancel-booking/{id}', [SonographerController::class, 'sonographerCancelBooking']);
 
-    /* Client's API's */ 
-    Route::get('/dashboard-stats', [ClientUserController::class, 'clientStats']); 
+    /* Client's API's */
+    Route::get('/dashboard-stats', [ClientUserController::class, 'clientStats']);
     Route::post('earning-chart', [ClientUserController::class, 'clientEarningChart']);
     Route::post('booking-chart', [ClientUserController::class, 'clientBookingChart']);
     Route::get('/validate-token', [ClientUserController::class, 'validateToken']);
@@ -148,7 +150,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::patch('/update-client', [ClientUserController::class, 'updateClient']);
     Route::get('/get-client', [ClientUserController::class, 'getClient']);
 
-    /* Reviews Api For Sonographer and Doctor */ 
+    /* Reviews Api For Sonographer and Doctor */
     Route::post('create-review', [ReviewController::class, 'store']);
     Route::patch('update-review/{id}', [ReviewController::class, 'update']);
 
@@ -179,14 +181,14 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::get('connect-accounts', [ClientController::class, 'getConnectAccounts']);
     Route::post('withdrawal-amount', [ClientController::class, 'withdrawalAmount']);
     Route::get('transactions', [ClientController::class, 'transactionsHistory']);
-}); 
+});
 Route::post('/send-web-notification', [ClientController::class, 'sendNotification']);
 
 /**
  * Public Routes
  * **/
-Route::get('/get-services', [ServiceController::class, 'getServices']); 
-Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']); 
+Route::get('/get-services', [ServiceController::class, 'getServices']);
+Route::get('/get-service-categories', [ServiceCategoryController::class, 'getServiceCategories']);
 Route::post('/sonographer-eligibility', [DoctorController::class, 'checkEligibility']);
 Route::get('/show-booking/{id}', [DoctorController::class, 'showBooking']);
 Route::get('/get-faqs', [FaqController::class, 'getFaqs']);
