@@ -32,6 +32,7 @@ class DoctorController extends Controller
             $register_no = $request->input('sonographer_registery');
             $language = $request->input('sonographer_language');
             $equipment = $request->input('sonographer_equipment');
+            $type = $request->input('sonographer_type');
             
             $records = Company::with('client')
                 ->whereHas('client', function ($query) {
@@ -69,6 +70,18 @@ class DoctorController extends Controller
                 })
                 ->when($register_no == 'yes', function ($query) {
                     $query->whereHas('registries');
+                })
+                ->when($type, function ($query) use ($type) {
+                    if ($type === 'Sonographer Only') {
+                        $query->where('equipment_availability', 'No')
+                            ->where('pacs_reading', 'No');
+                    } elseif ($type === 'Sonographer w/Machine') {
+                        $query->where('equipment_availability', 'Yes')
+                            ->where('pacs_reading', 'No');
+                    } elseif ($type === 'Sonographer w/Machine & PACS') {
+                        $query->where('equipment_availability', 'Yes')
+                            ->where('pacs_reading', 'Yes');
+                    }
                 })
                 ->count();
 
