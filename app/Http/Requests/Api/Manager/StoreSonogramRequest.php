@@ -7,7 +7,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 
-class StoreSonographerTimeRequest extends FormRequest
+class StoreSonogramRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
