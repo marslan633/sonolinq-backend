@@ -250,6 +250,25 @@ class AuthController extends Controller
                 Mail::to($request->email)->send(new DynamicMail($details));
             }
 
+            $emailTemplate = EmailTemplate::where('type', 'new-user-admin-email')->first();
+
+            if($emailTemplate) {
+
+                $adminUsers = User::where('role', 'Admin')->get();
+                
+                $details = [
+                    'subject' => $emailTemplate->subject,
+                    'body' => $emailTemplate->body,
+                    'username' => $request->full_name,
+                    'user_email' => $request->email,
+                    'type' => $emailTemplate->type,
+                ];
+                
+                foreach ($adminUsers as $admin) {
+                    Mail::to($admin->email)->send(new DynamicMail($details));
+                }
+            }
+
             return sendResponse(true, 200, 'Client Registered Successfully!', [], 200);
 
         }catch(\Exception $ex){
