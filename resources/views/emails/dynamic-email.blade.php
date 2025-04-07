@@ -217,6 +217,8 @@
                   $data = str_replace(['{{username}}', '{{previous_level}}', '{{latest_level}}'], [$details['full_name'], $details['previous_level'], $details['latest_level']], $details['body']);
                 } elseif ($details['type'] == 'inactive-client-email') {
                   $data = str_replace(['{{username}}', '{{reason}}'], [$details['full_name'], $details['reason']], $details['body']);
+                } elseif ($details['type'] == 'new-user-admin-email') {
+                  $data = str_replace(['{{username}}', '{{useremail}}'], [$details['full_name'], $details['user_email']], $details['body']);
                 }
             @endphp
 

@@ -211,3 +211,4 @@ Route::get('completed-booking-request-stripe/{id}', [ClientController::class, 'c
 Route::post('create-stripe-connected-account', [ClientController::class, 'createStripeConnectedAccount']);
 Route::post('transfer-fund-connected-account', [ClientController::class, 'transferFundConnectedAccount']);
 Route::post('create-account-session', [ClientController::class, 'createAccountSession']);
+Route::post('resend-verification-email', [AuthController::class, 'resendVerificationEmail']);

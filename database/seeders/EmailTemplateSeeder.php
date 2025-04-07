@@ -97,7 +97,7 @@ class EmailTemplateSeeder extends Seeder
                 "body" => "<h1>Hi Admin!</h1>
                         <p>A new user has just registered on the platform. Here are the details:</p>
                         <p>Name: {{username}}</p>
-                        <p>Email: {{user_email}}</p>
+                        <p>Email: <code>{{useremail}}</code></p>
                         <p>Please log in to the admin panel for more information.</p>
                         <p>Thank you</p>",
                 "type" => "new-user-admin-email",

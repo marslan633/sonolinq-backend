@@ -259,7 +259,7 @@ class AuthController extends Controller
                 $details = [
                     'subject' => $emailTemplate->subject,
                     'body' => $emailTemplate->body,
-                    'username' => $request->full_name,
+                    'full_name' => $request->full_name,
                     'user_email' => $request->email,
                     'type' => $emailTemplate->type,
                 ];
@@ -308,5 +308,34 @@ class AuthController extends Controller
         $token->revoke();
 
         return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function resendVerificationEmail(Request $request)
+    {
+        try {
+            $client = Client::where('email', $request->email)->first();
+
+            if ($client) {
+                $emailTemplate = EmailTemplate::where('type', 'verification')->first();
+
+                if ($emailTemplate) {
+                    $details = [
+                        'subject'   => $emailTemplate->subject,
+                        'body'      => $emailTemplate->body,
+                        'full_name' => $client->full_name,
+                        'url'       => $request->url . encrypt_value($client->email),
+                        'type'      => $emailTemplate->type,
+                    ];
+
+                    Mail::to($client->email)->send(new DynamicMail($details));
+                }
+
+                return sendResponse(true, 200, 'Verification email sent successfully.', [], 200);
+            } else {
+                return sendResponse(false, 200, 'Client not found.', [], 200);
+            }
+        } catch (\Exception $ex) {
+            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 500);
+        }
     }
 }
