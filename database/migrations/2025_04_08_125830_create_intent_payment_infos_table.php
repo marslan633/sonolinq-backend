@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('intent_payment_infos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('client_id');
+            $table->unsignedBigInteger('booking_id')->nullable();
             $table->string('p_intent_id')->nullable();
             $table->enum('status', ['Pending', 'Progress', 'Completed'])->default('Pending');
             $table->string('duration')->nullable();
             
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->timestamps();
         });
     }

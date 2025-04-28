@@ -96,87 +96,262 @@ class DoctorController extends Controller
     /**
      * Doctor Booking Appointment.
      */
-    public function appointment(Request $request) { 
-        try {
-            if($request->input('token')) {
-                Stripe::setApiKey(config('services.stripe.secret'));
-                try {
-                    $amount = $request->input('amount') * 100;
+    // public function appointment(Request $request) { 
+    //     try {
+    //         // Creating preference first
+    //         $preference = $request->all();
+            
+    //         if($request->input('sonographer_language')) {
+    //             $arrayLanguage = $request->input('sonographer_language');
+    //             $strLang = implode(',', $arrayLanguage);
+                
+    //             $preference['sonographer_language'] = $strLang;                                 
+    //         }
+    //         $preference = Preference::create($preference);
+            
+    //         $preferenceID = $preference->id;
 
+    //         foreach ($request->reservations as $reservationData) {
+                
+    //             // Booking will create on the base of reservations
+    //             $booking = $request->all();
+    //             $client_id = Auth::guard('client-api')->user()->id;
+                
+    //             $booking['doctor_id'] = $client_id;
+    //             $booking['preference_id']= $preferenceID; 
+                
+    //             $booking = Booking::create($booking);
+
+
+    //             if($request->input('token')) {
+    //                 Stripe::setApiKey(config('services.stripe.secret'));
+    //                 try {
+    //                     $amount = $reservationData['amount'] * 100;
+
+    //                     $paymentMethod = PaymentMethod::create([
+    //                         'type' => 'card',
+    //                         'card' => [
+    //                             'token' => $request->input('token'),
+    //                         ],
+    //                     ]);
+            
+    //                     $paymentIntent = PaymentIntent::create([
+    //                         'amount' => $amount,
+    //                         'currency' => 'usd',
+    //                         'payment_method_types' => ['card'], // Only allow card payments
+    //                         'payment_method' => $paymentMethod->id,
+    //                         'confirmation_method' => 'manual',
+    //                         'confirm' => true,
+    //                         'capture_method' => 'manual',
+    //                             'payment_method_options' => [
+    //                             'card_present' => ['request_extended_authorization' => true],
+    //                         ],
+    //                         'description' => 'SonoLinq Service Payment',
+    //                     ]);
+
+    //                     IntentPaymentInfo::create([
+    //                         'client_id' => Auth::guard('client-api')->user()->id,
+    //                         'booking_id' => $booking->id,
+    //                         'p_intent_id' => $paymentIntent->id,
+    //                         'status' => 'Pending',
+    //                         'duration' => 7
+    //                     ]);
+    //                 } catch (\Exception $e) {
+    //                     // Handle payment error here
+    //                     return response()->json(['error' => $e->getMessage()], 500);
+    //                 }
+    //             }
+
+    //             if ($request->amount) {
+    //                 $booking->charge_amount = $paymentIntent->amount;
+    //                 $booking->update();
+    //             }
+
+    //             // Generate booking_tracking_id
+    //             $prefix = 'SNAPP';
+    //             $randomNumber = mt_rand(1000, 9999);
+    //             $booking->update(['booking_tracking_id' => $prefix . $randomNumber . $booking->id]);
+                
+    //             // Creating reservation
+    //             $reservation = Reservation::create([
+    //                 'type' => $reservationData['type'],
+    //                 'date' => $reservationData['date'],
+    //                 'time' => $reservationData['time'],
+    //                 'amount' => $reservationData['amount'],
+    //                 'booking_id' => $booking->id,
+    //             ]);
+
+    //             $reservation->serviceCategories()->attach($reservationData['service_category_id']);
+    //             $reservation->services()->attach($reservationData['service_id']);
+
+
+    //             // Here we are assigning the booking to selected sonographers
+    //             // Run eligibility check for sonographer
+    //             $gender = $request->input('sonographer_gender');
+    //             $level = $request->input('sonographer_level');
+    //             $experience = $request->input('sonographer_experience');
+    //             $register_no = $request->input('sonographer_registery');
+    //             $language = $request->input('sonographer_language');
+    //             $equipment = $request->input('sonographer_equipment');
+                
+    //             $records = Company::with('client')
+    //                 ->whereHas('client', function ($query) {
+    //                     $query->where('role', 'Sonographer')->where('status', 'active');
+    //                 })
+    //                 ->when($level, function ($query, $level) {
+    //                     $query->where('level', $level);
+    //                 })
+    //                 ->when($experience, function ($query, $experience) {
+    //                     $query->where('years_of_experience', '>=', $experience);
+    //                 })
+    //                 // ->when($register_no, function ($query) {
+    //                 //     $query->whereNotNull('register_no');
+    //                 // })
+    //                 ->when($language, function ($query) use ($language) {
+    //                     $query->where(function ($subQuery) use ($language) {
+    //                         foreach ($language as $lang) {
+    //                             $subQuery->orWhere('languages_spoken', 'LIKE', '%' . $lang . '%');
+    //                         }
+    //                     });
+    //                 })
+    //                 ->when($equipment, function ($query) use ($equipment) {
+    //                     $query->where(function ($subQuery) use ($equipment) {
+    //                         foreach ($equipment as $equi) {
+    //                             $subQuery->orWhere('type_of_equipment', 'LIKE', '%' . $equi . '%');
+    //                         }
+    //                     });
+    //                 })
+    //                 ->when($gender, function ($query, $gender) {
+    //                     $query->whereHas('client', function ($subQuery) use ($gender) {
+    //                         $subQuery->where('gender', $gender)
+    //                             ->orWhereNull('gender')
+    //                             ->orWhere('gender', '');
+    //                     });
+    //                 })
+    //                 ->when($register_no == 'yes', function ($query) {
+    //                     $query->whereHas('registries');
+    //                 })
+    //                 ->get();
+
+    //             $sonographers = $records;
+
+    //             $emailTemplate = EmailTemplate::where('type', 'booking-request')->first();
+    //             foreach($sonographers as $sonographer) {
+    //                 $eligible = new EligibleSonographer();
+    //                 $eligible->sonographer_id = $sonographer->client_id;
+    //                 $eligible->booking_id = $booking->id;
+    //                 $eligible->save();
+                    
+    //                 //Send Booking Request Email to Sonographers
+    //                 if($emailTemplate) {
+    //                     $details = [
+    //                         'subject' => $emailTemplate->subject,
+    //                         'body'=> $emailTemplate->body,
+    //                         'type' => $emailTemplate->type,
+    //                         'full_name' => $sonographer->client['full_name']
+    //                     ];
+    //                     Mail::to($sonographer->client['email'])->send(new DynamicMail($details)); 
+    //                 }                         
+    //                 // Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
+
+    //                 /* Send Booking Request Notification to Sonographers */
+    //                 $tokens = [$sonographer->client['device_token']];
+    //                 if($tokens) {
+    //                     $title = "Appointment Request";
+    //                     $body = "You have received appointment request from doctor";
+    //                     $client_id = $sonographer->client['id'];
+    //                     $module_id = $booking->id;
+    //                     $module_name = "Booking Request";
+
+    //                     $notification = new NotificationHistory();
+    //                     $notification->title = $title;
+    //                     $notification->body = $body;
+    //                     $notification->module_id = $module_id;
+    //                     $notification->module_name = $module_name;
+    //                     $notification->client_id = $client_id;
+    //                     $notification->save();
+                        
+    //                     $count = NotificationHistory::where('client_id', $client_id)->where('is_read', false)->count();
+    //                     $this->sendNotification($tokens, $title, $body, $count);
+    //                 }
+    //             }
+    //         }
+
+    //         return sendResponse(true, 200, 'Appointment Created Successfully!', $preference, 200);
+    //     } catch (\Exception $ex) {
+    //         return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+    //     }
+    // }
+
+    public function appointment(Request $request) {
+        DB::beginTransaction();
+
+        $paymentIntents = []; // To store successfully created payment intents
+
+        try {
+            $preference = $request->all();
+            
+            if ($request->input('sonographer_language')) {
+                $arrayLanguage = $request->input('sonographer_language');
+                $strLang = implode(',', $arrayLanguage);
+                $preference['sonographer_language'] = $strLang;
+            }
+
+            $preference = Preference::create($preference);
+            $preferenceID = $preference->id;
+
+            foreach ($request->reservations as $reservationData) {
+                $booking = $request->all();
+                $client_id = Auth::guard('client-api')->user()->id;
+                $booking['doctor_id'] = $client_id;
+                $booking['preference_id'] = $preferenceID;
+                $booking = Booking::create($booking);
+
+                if ($request->input('token')) {
+                    $amount = $reservationData['amount'] * 100;
+                    Stripe::setApiKey(config('services.stripe.secret'));
                     $paymentMethod = PaymentMethod::create([
                         'type' => 'card',
                         'card' => [
                             'token' => $request->input('token'),
                         ],
                     ]);
-        
+
                     $paymentIntent = PaymentIntent::create([
                         'amount' => $amount,
                         'currency' => 'usd',
-                        'payment_method_types' => ['card'], // Only allow card payments
+                        'payment_method_types' => ['card'],
                         'payment_method' => $paymentMethod->id,
                         'confirmation_method' => 'manual',
                         'confirm' => true,
                         'capture_method' => 'manual',
-                            'payment_method_options' => [
+                        'payment_method_options' => [
                             'card_present' => ['request_extended_authorization' => true],
                         ],
                         'description' => 'SonoLinq Service Payment',
                     ]);
 
+                    // Save intent info
                     IntentPaymentInfo::create([
-                        'client_id' => Auth::guard('client-api')->user()->id,
+                        'client_id' => $client_id,
+                        'booking_id' => $booking->id,
                         'p_intent_id' => $paymentIntent->id,
                         'status' => 'Pending',
                         'duration' => 7
                     ]);
 
-                    // $charge = Charge::create([
-                    //     'amount' => $request->input('amount') * 100, // Convert amount to cents
-                    //     'currency' => 'usd',
-                    //     'source' => $request->input('token'), // Token received from client
-                    //     'description' => 'SonoLinq Service Payment',
-                    // ]);
-                } catch (\Exception $e) {
-                    // Handle payment error here
-                    return response()->json(['error' => $e->getMessage()], 500);
+                    $paymentIntents[] = $paymentIntent; // Track this intent
                 }
-            }
-            
-            // Creating preference first
-            $preference = $request->all();
-            
-            if($request->input('sonographer_language')) {
-                $arrayLanguage = $request->input('sonographer_language');
-                $strLang = implode(',', $arrayLanguage);
-                
-                $preference['sonographer_language'] = $strLang;                                 
-            }
-            $preference = Preference::create($preference);
-            
-            $preferenceID = $preference->id;
 
-            foreach ($request->reservations as $reservationData) {
-                
-                // Booking will create on the base of reservations
-                $booking = $request->all();
-                $client_id = Auth::guard('client-api')->user()->id;
-                
-                $booking['doctor_id'] = $client_id;
-                if($request->amount) {
-                    $booking['charge_amount'] = $paymentIntent->amount;
+                if ($request->amount) {
+                    $booking->charge_amount = $paymentIntent->amount;
+                    $booking->update();
                 }
-                
-                $booking['preference_id']= $preferenceID; 
-                
-                $booking = Booking::create($booking);
 
-                // Generate booking_tracking_id
                 $prefix = 'SNAPP';
                 $randomNumber = mt_rand(1000, 9999);
                 $booking->update(['booking_tracking_id' => $prefix . $randomNumber . $booking->id]);
-                
-                // Creating reservation
+
                 $reservation = Reservation::create([
                     'type' => $reservationData['type'],
                     'date' => $reservationData['date'],
@@ -187,7 +362,6 @@ class DoctorController extends Controller
 
                 $reservation->serviceCategories()->attach($reservationData['service_category_id']);
                 $reservation->services()->attach($reservationData['service_id']);
-
 
                 // Here we are assigning the booking to selected sonographers
                 // Run eligibility check for sonographer
@@ -281,9 +455,25 @@ class DoctorController extends Controller
                 }
             }
 
+            DB::commit(); // All good, commit the transaction
             return sendResponse(true, 200, 'Appointment Created Successfully!', $preference, 200);
+
         } catch (\Exception $ex) {
-            return sendResponse(false, 500, 'Internal Server Error', $ex->getMessage(), 200);
+            DB::rollBack(); // Rollback DB changes
+
+            // Uncapture all previously successful payment intents
+            if (!empty($paymentIntents)) {
+                foreach ($paymentIntents as $intent) {
+                    try {
+                        $retrievedIntent = PaymentIntent::retrieve($intent->id);
+                        $retrievedIntent->cancel(); // Proper way to cancel
+                    } catch (\Exception $e) {
+                        \Log::error("Failed to cancel PaymentIntent {$intent->id}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            return sendResponse(false, 500, 'Payment failed. All actions rolled back.', $ex->getMessage(), 200);
         }
     }
 

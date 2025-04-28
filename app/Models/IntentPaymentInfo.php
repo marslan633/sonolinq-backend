@@ -9,5 +9,5 @@ class IntentPaymentInfo extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['client_id', 'p_intent_id', 'status', 'duration'];
+    protected $fillable = ['client_id', 'booking_id', 'p_intent_id', 'status', 'duration'];
 }
