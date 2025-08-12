@@ -185,4 +185,7 @@ return [
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
+    'firebase' => [
+        'fcm_server_key' => env('FCM_SERVER_KEY'),
+    ],
 ];

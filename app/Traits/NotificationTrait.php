@@ -10,7 +10,7 @@ trait NotificationTrait
     public function sendNotification($tokens, $title, $body, $count = 0)
     {
         $url = 'https://fcm.googleapis.com/fcm/send';
-        $serverKey = env('FCM_SERVER_KEY'); // ADD SERVER KEY HERE PROVIDED BY FCM
+        $serverKey = config('app.firebase.fcm_server_key'); // ADD SERVER KEY HERE PROVIDED BY FCM
 
         $data = [
             "registration_ids" => $tokens,
