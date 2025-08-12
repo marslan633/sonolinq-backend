@@ -827,4 +827,86 @@ if ($payout->status === 'paid') {
         // return $transfer;
     }
     // My xhanges in process working
+
+
+
+public function sendNotificationNew(Request $request)
+{
+    $tokens = $request->input('tokens', []);
+    $title  = $request->input('title', 'Notification');
+    $body   = $request->input('body', 'You have a new notification');
+    $count  = $request->input('count', 0);
+
+    // Load Service Account
+    $serviceAccountPath = storage_path('app/firebase/firebase_service_account.json');
+    $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true);
+
+    $projectId = $serviceAccount['project_id'];
+    $privateKey = $serviceAccount['private_key'];
+    $clientEmail = $serviceAccount['client_email'];
+
+    // Create JWT
+    $now = time();
+    $jwtHeader = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $jwtClaimSet = base64_encode(json_encode([
+        'iss'   => $clientEmail,
+        'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+        'aud'   => 'https://oauth2.googleapis.com/token',
+        'exp'   => $now + 3600,
+        'iat'   => $now
+    ]));
+
+    $signatureInput = $jwtHeader . '.' . $jwtClaimSet;
+    openssl_sign($signatureInput, $signature, $privateKey, 'sha256');
+    $jwt = $signatureInput . '.' . base64_encode($signature);
+
+    // Exchange JWT for Access Token
+    $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion'  => $jwt,
+    ]);
+
+
+    if ($tokenResponse->failed()) {
+        \Log::error('Token Request Failed', ['error' => $tokenResponse->body()]);
+        return false;
+    }
+
+    $accessToken = $tokenResponse->json()['access_token'];
+
+    // Send FCM Notifications
+    $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+
+    foreach ($tokens as $token) {
+        $payload = [
+            'message' => [
+                'token' => $token,
+                'notification' => [
+                    'title' => $title,
+                    'body'  => $body,
+                    'icon'  => "https://sonolinq.com/assets/img/favicon.png",
+                ],
+                'data' => [
+                    'count' => (string) $count,
+                ],
+            ]
+        ];
+
+        
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+            'Content-Type'  => 'application/json',
+        ])->post($url, $payload);
+        return $response;
+        if ($response->failed()) {
+            \Log::error('FCM Send Failed', [
+                'token' => $token,
+                'error' => $response->body()
+            ]);
+        }
+    }
+
+    return true;
+}
 }

@@ -182,7 +182,7 @@ Route::group(['prefix' => 'client', 'middleware' => ['auth:client-api', 'scopes:
     Route::post('withdrawal-amount', [ClientController::class, 'withdrawalAmount']);
     Route::get('transactions', [ClientController::class, 'transactionsHistory']);
 });
-Route::post('/send-web-notification', [ClientController::class, 'sendNotification']);
+Route::post('/send-web-notification', [ClientController::class, 'sendNotificationNew']);
 
 /**
  * Public Routes
