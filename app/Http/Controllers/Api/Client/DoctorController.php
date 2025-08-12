@@ -101,42 +101,12 @@ class DoctorController extends Controller
             if($request->input('token')) {
                 Stripe::setApiKey(config('services.stripe.secret'));
                 try {
-                    $amount = $request->input('amount') * 100;
-
-                    $paymentMethod = PaymentMethod::create([
-                        'type' => 'card',
-                        'card' => [
-                            'token' => $request->input('token'),
-                        ],
-                    ]);
-        
-                    $paymentIntent = PaymentIntent::create([
-                        'amount' => $amount,
+                    $charge = Charge::create([
+                        'amount' => $request->input('amount') * 100, // Convert amount to cents
                         'currency' => 'usd',
-                        'payment_method_types' => ['card'], // Only allow card payments
-                        'payment_method' => $paymentMethod->id,
-                        'confirmation_method' => 'manual',
-                        'confirm' => true,
-                        'capture_method' => 'manual',
-                            'payment_method_options' => [
-                            'card_present' => ['request_extended_authorization' => true],
-                        ],
+                        'source' => $request->input('token'), // Token received from client
                         'description' => 'SonoLinq Service Payment',
                     ]);
-
-                    IntentPaymentInfo::create([
-                        'client_id' => Auth::guard('client-api')->user()->id,
-                        'p_intent_id' => $paymentIntent->id,
-                        'status' => 'Pending',
-                        'duration' => 7
-                    ]);
-
-                    // $charge = Charge::create([
-                    //     'amount' => $request->input('amount') * 100, // Convert amount to cents
-                    //     'currency' => 'usd',
-                    //     'source' => $request->input('token'), // Token received from client
-                    //     'description' => 'SonoLinq Service Payment',
-                    // ]);
                 } catch (\Exception $e) {
                     // Handle payment error here
                     return response()->json(['error' => $e->getMessage()], 500);
@@ -164,7 +134,7 @@ class DoctorController extends Controller
                 
                 $booking['doctor_id'] = $client_id;
                 if($request->amount) {
-                    $booking['charge_amount'] = $paymentIntent->amount;
+                    $booking['charge_amount'] = $charge->amount;
                 }
                 
                 $booking['preference_id']= $preferenceID; 
