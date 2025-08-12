@@ -884,7 +884,7 @@ public function sendNotificationNew(Request $request)
                 'notification' => [
                     'title' => $title,
                     'body'  => $body,
-                    'icon'  => "https://sonolinq.com/assets/img/favicon.png",
+                    'image'  => "https://sonolinq.com/assets/img/favicon.png",
                 ],
                 'data' => [
                     'count' => (string) $count,
