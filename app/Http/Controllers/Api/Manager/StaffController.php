@@ -35,7 +35,7 @@ class StaffController extends Controller
             /*Creating Staff*/
             $staff = User::create();
             /*Sending Register Mail*/
-            Mail::to($request->email)->send(new StaffRegisterMail(['details' => $request->all()]));
+            //Mail::to($request->email)->send(new StaffRegisterMail(['details' => $request->all()]));
             /*Retruing Response*/
             return sendResponse(true, 200, 'Staff Created Successfully!', $staff, 200);
         } catch (\Exception $ex) {
@@ -69,7 +69,7 @@ class StaffController extends Controller
                 /*Generating Password*/
                 $data['password'] = Str::random(8, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
                 /*Sending Register Mail*/
-                Mail::to($request->email)->send(new StaffRegisterMail(['details' => $data]));
+                //Mail::to($request->email)->send(new StaffRegisterMail(['details' => $data]));
             }
             $user->update($request->all());
             return sendResponse(true, 200, 'User Updated Successfully!', $user, 200);

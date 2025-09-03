@@ -224,9 +224,9 @@ class DoctorController extends Controller
                             'type' => $emailTemplate->type,
                             'full_name' => $sonographer->client['full_name']
                         ];
-                        Mail::to($sonographer->client['email'])->send(new DynamicMail($details)); 
+                        //Mail::to($sonographer->client['email'])->send(new DynamicMail($details)); 
                     }                         
-                    // Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
+                    // //Mail::to($sonographer->client['email'])->send(new BookingRequestMail());
 
                     /* Send Booking Request Notification to Sonographers */
                     $tokens = [$sonographer->client['device_token']];
@@ -482,7 +482,7 @@ class DoctorController extends Controller
                             'full_name' => $sonographerDetails->doctor['full_name']
                         ];
 
-                        Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
+                        //Mail::to($sonographerDetails->doctor['email'])->send(new DynamicMail($details)); 
                     }
 
                     /* Send Booking Cancelation Notification to Sonographer */

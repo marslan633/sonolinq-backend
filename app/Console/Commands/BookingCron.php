@@ -79,7 +79,7 @@ class BookingCron extends Command
                         'full_name' => $sonographerDetails->sonographer['full_name']
                     ];
 
-                    Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details)); 
+                    //Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details)); 
                 }
                 
                 /* Send Booking Completed Notification to Sonographer */

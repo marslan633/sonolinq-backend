@@ -77,7 +77,7 @@ class SonographerController extends Controller
                     'full_name' => $doctorDetails->doctor['full_name']
                 ];
 
-                Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+                //Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
             }
 
             /* Send Booking Accepted Notification to Sonographers */
@@ -258,7 +258,7 @@ class SonographerController extends Controller
                 'full_name' => $doctorDetails->doctor['full_name']
             ];
 
-            Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
+            //Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details)); 
         }
         /* Send Booking Cancelation Notification to Doctor */
         $tokens = [$booking->doctor['device_token']];

@@ -526,7 +526,7 @@ class ClientUserController extends Controller
                         'full_name' => $doctorDetails->doctor['full_name']
                     ];
 
-                    Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details));
+                    //Mail::to($doctorDetails->doctor['email'])->send(new DynamicMail($details));
                 }
 
                 /* Send Booking Delivered Notification to Doctor */
@@ -564,7 +564,7 @@ class ClientUserController extends Controller
                         'full_name' => $sonographerDetails->sonographer['full_name']
                     ];
 
-                    Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details));
+                    //Mail::to($sonographerDetails->sonographer['email'])->send(new DynamicMail($details));
                 }
 
                 /* Send Booking Completed Notification to Sonographer */

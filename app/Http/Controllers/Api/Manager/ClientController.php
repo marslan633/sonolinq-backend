@@ -108,7 +108,7 @@ class ClientController extends Controller
                         'full_name' => $client->full_name,
                         'url' => $request->url,
                     ];
-                    Mail::to($client->email)->send(new DynamicMail($details));
+                    //Mail::to($client->email)->send(new DynamicMail($details));
                 }
             }
 
@@ -193,7 +193,7 @@ class ClientController extends Controller
                         'full_name' => $client->full_name,
                         'reason' => $request->reason,
                     ];
-                    Mail::to($client->email)->send(new DynamicMail($details));
+                    //Mail::to($client->email)->send(new DynamicMail($details));
                 }
             }
 

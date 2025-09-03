@@ -96,7 +96,7 @@ class AssignClientLevels extends Command
                         'full_name' => $client->full_name,
                         'level' => $newLevel
                     ];
-                     Mail::to($client->email)->send(new DynamicMail($details));
+                     //Mail::to($client->email)->send(new DynamicMail($details));
                 }
                 /* Send Level Upgrade Notification to Client */
                 $tokens = [$client->device_token];
@@ -131,7 +131,7 @@ class AssignClientLevels extends Command
                         'latest_level' => $newLevel,
                         'previous_level' => $prevLevel
                     ];
-                    Mail::to($client->email)->send(new DynamicMail($details));
+                    //Mail::to($client->email)->send(new DynamicMail($details));
                 }
 
                 /* Send Level Downgrade Notification to Client */
